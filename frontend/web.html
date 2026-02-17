@@ -4,8 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>KU Facility</title>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",sans-serif;}
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI",sans-serif;
+}
 
 body{
   height:100vh;
@@ -15,6 +21,7 @@ body{
   justify-content:center;
 }
 
+/* TOP BAR */
 .topbar{
   position:absolute;
   top:0;
@@ -29,6 +36,7 @@ body{
   font-weight:500;
 }
 
+/* MAIN CONTAINER */
 .container{
   width:1120px;
   height:640px;
@@ -39,7 +47,7 @@ body{
   overflow:hidden;
 }
 
-/* LEFT */
+/* LEFT PANEL */
 .left{
   width:340px;
   background:#efefef;
@@ -53,25 +61,47 @@ body{
   box-shadow:0 2px 4px rgba(0,0,0,.15);
 }
 
+/* TITLE */
 .title{
   font-size:30px;
   font-weight:800;
-  color:#145a32;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
-.title span{position:relative;}
-.title span::after{
+/* KU */
+.ku{
+  position:relative;
+  color:#117C0D;
+  font-weight:900;
+}
+
+.ku::after{
   content:"";
   position:absolute;
   left:2px;
-  bottom:-5px;
-  width:50px;
+  bottom:-6px;
+  width:36px;
   height:6px;
   background:#d4e157;
+  border-radius:3px;
 }
 
-.logo{width:120px;margin:6px 0 12px;}
+/* FACILITY */
+.facility{
+  color:#005E37;
+  font-weight:600;
+  letter-spacing:1px;
+}
 
+/* LOGO */
+.logo{
+  width:120px;
+  margin:6px 0 12px;
+}
+
+/* MENU BUTTON */
 .menu-btn{
   width:75%;
   padding:14px;
@@ -91,7 +121,7 @@ body{
   box-shadow: inset 0 0 0 2px #ececec;
 }
 
-/* RIGHT SLIDER */
+/* RIGHT SIDE */
 .right-wrapper{
   flex:1;
   overflow:hidden;
@@ -102,19 +132,20 @@ body{
 
 .slider{
   display:flex;
-  width:200%; /* ต้องใหญ่ 2 เท่า เพราะมี 2 panel */
+  width:200%;
   height:100%;
   transition:transform .55s cubic-bezier(.65,0,.35,1);
 }
 
 .panel{
-  min-width:100%; /* แต่ละ panel เท่ากับพื้นที่ฝั่งขวาพอดี */
+  min-width:100%;
   flex-shrink:0;
   display:flex;
   align-items:center;
   justify-content:center;
 }
 
+/* CARD */
 .card{
   width:360px;
   background:white;
@@ -126,7 +157,10 @@ body{
   gap:10px;
 }
 
-label{font-size:12px;color:#555;}
+label{
+  font-size:12px;
+  color:#555;
+}
 
 input{
   height:34px;
@@ -155,9 +189,9 @@ input{
   margin-top:2px;
   cursor:pointer;
 }
-
 </style>
 </head>
+
 <body>
 
 <div class="topbar">Kasetsart University</div>
@@ -166,8 +200,13 @@ input{
 
   <!-- LEFT -->
   <div class="left">
-    <div class="title"><span>KU</span> FACILITY</div>
-    <img class="logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/4/42/Kasetsart_University_Seal.svg/1200px-Kasetsart_University_Seal.svg.png">
+    <div class="title">
+      <span class="ku">KU</span>
+      <span class="facility">FACILITY</span>
+    </div>
+
+    <img class="logo"
+      src="https://lh5.googleusercontent.com/proxy/qbxHivySAmM2hiuGTp-q0UfvgDii-6pWAQIlDal764IEMnPXj9CXMjSP1_0yl_l4M7RIM-VLdQsz64ndTLEdHF2EiVfkUSeHUXHFTjKr3cgKL90">
 
     <button id="loginBtn" class="menu-btn active" onclick="showLogin()">Login</button>
     <button id="registerBtn" class="menu-btn" onclick="showRegister()">Register</button>
@@ -219,23 +258,21 @@ input{
 </div>
 
 <script>
-
-const slider=document.getElementById('slider');
-const loginBtn=document.getElementById('loginBtn');
-const registerBtn=document.getElementById('registerBtn');
+const slider = document.getElementById('slider');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
 
 function showRegister(){
-  slider.style.transform='translateX(-100%)'; /* เลื่อนไปเต็ม panel */
+  slider.style.transform = 'translateX(-100%)';
   loginBtn.classList.remove('active');
   registerBtn.classList.add('active');
 }
 
 function showLogin(){
-  slider.style.transform='translateX(0%)';
+  slider.style.transform = 'translateX(0%)';
   registerBtn.classList.remove('active');
   loginBtn.classList.add('active');
 }
-
 </script>
 
 </body>
