@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2>
+        {{ user.username }}'s Profile
+        {% if current_user == user.username %}
+            <span style="font-size: 0.6em; color: green;">(My Account)</span>
+        {% endif %}
+    </h2>
+    <p>Followers: {{ user.followers|length }} | Following: {{ user.following|length }}</p>
+    
+    {% if current_user and current_user != user.username %}
+        {% if current_user in user.followers %}
+            <form action="{{ url_for('unfollow', target_user=user.username) }}" method="POST">
+                <button type="submit" style="background-color: #ffcccc; color: red; border: 1px solid red;">Unfollow</button>
+            </form>
+        {% else %}
+            <form action="{{ url_for('follow', target_user=user.username) }}" method="POST">
+                <button type="submit">Follow</button>
+            </form>
+        {% endif %}
+    {% endif %}
+
+    <h3>Posts</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        {% for post in posts %}
+            <div style="border: 1px solid #ccc; width: 200px; padding: 10px;">
+                <img src="{{ post.image_url }}" style="width: 100%; height: 150px; object-fit: cover;">
+                <p>{{ post.caption[:30] }}...</p>
+                <small style="color: #888;">{{ post.created_at.strftime('%Y-%m-%d') if post.created_at else '' }}</small>
+            </div>
+        {% else %}
+            <p>No posts yet.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
