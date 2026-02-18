@@ -68,3 +68,28 @@ CREATE TABLE booking (
     CONSTRAINT unique_booking UNIQUE (court_id, date, time_id)
 );
 
+DELIMITER $$
+CREATE TRIGGER trg_booking_insert
+AFTER INSERT ON booking
+FOR EACH ROW
+BEGIN
+    UPDATE court
+    SET cur_pp = cur_pp + 1
+    WHERE court_id = NEW.court_id;
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER trg_booking_delete
+AFTER UPDATE ON booking
+FOR EACH ROW
+BEGIN
+
+    UPDATE court
+    SET cur_pp = cur_pp - 1
+    WHERE court_id = OLD.court_id;
+
+END$$
+DELIMITER ;
+
