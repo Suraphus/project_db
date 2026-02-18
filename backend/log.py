@@ -25,19 +25,21 @@ def login():
 
 @app.route("/api/register", methods=["POST"])
 def register():
-    data = request.json
+    try:
+        data = request.json
+        user = {
+            "studentId": data.get("studentId"),
+            "name": data.get("name"),
+            "surname": data.get("surname"),
+            "email": data.get("email"),
+            "password": generate_password_hash(data.get("password"))
+        }
 
-    user = {
-        "studentId": data.get("studentId"),
-        "name": data.get("name"),
-        "surname": data.get("surname"),
-        "email": data.get("email"),
-        "password": generate_password_hash(data.get("password"))
-    }
+        db.user.insert_one(user)
 
-    db.user.insert_one(user)
-
-    return jsonify({"status": "success"})
+        return jsonify({"status": "success"})
+    except:
+        return jsonify({"status": "failed"})
 
 if __name__ == "__main__":
     app.run(debug=True, port=6500)

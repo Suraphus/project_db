@@ -1,12 +1,35 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    navigate("/facilities");   
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("http://localhost:6500/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setIsAuthenticated(true);
+        navigate("/facilities");
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
   };
 
   return (
@@ -14,10 +37,19 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
       <div className="w-[360px] bg-white p-[26px] rounded-[14px] shadow-md flex flex-col gap-[10px]">
         
         <label>Email</label>
-        <input className="h-[34px] bg-[#dde2e6] rounded px-2" />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-[34px] bg-[#dde2e6] rounded px-2"
+        />
 
         <label>Password</label>
-        <input type="password" className="h-[34px] bg-[#dde2e6] rounded px-2" />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="h-[34px] bg-[#dde2e6] rounded px-2"
+        />
 
         <button
           onClick={handleLogin}

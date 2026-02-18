@@ -1,34 +1,79 @@
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function RegisterForm({ setIsLogin }) {
+  const navigate = useNavigate();
+  const [studentId, setStudentId] = useState("");
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleRegister = () => {
-  
+  const handleRegister = async () => {
+    try {
+      const res = await fetch("http://localhost:6500/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ studentId, name, surname, email, password }),
+      });
 
-    alert("Register successful!")
+      const data = await res.json();
+      if (res.ok) {
+        setIsLogin(true);
+        navigate("/login");
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
+  };
 
-    setIsLogin(true)
-  }
+  console.log(studentId);
 
   return (
     <div className="min-w-full flex items-center justify-center">
       <div className="w-[360px] bg-white p-[26px] rounded-[14px] shadow-[0_4px_8px_rgba(0,0,0,.25)] flex flex-col gap-[10px]">
-        
         <label className="text-[12px] text-[#555]">Student ID</label>
-        <input className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none" />
-
+        <input
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
+        />
         <label className="text-[12px] text-[#555]">Name</label>
-        <input className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none" />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
+        />
 
         <label className="text-[12px] text-[#555]">Surname</label>
-        <input className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none" />
+        <input
+          value={surname}
+          onChange={(e) => setSurname(e.target.value)}
+          className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
+        />
 
         <label className="text-[12px] text-[#555]">Email</label>
-        <input className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none" />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
+        />
 
         <label className="text-[12px] text-[#555]">Password</label>
-        <input type="password" className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none" />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
+        />
 
-        <button 
+        <button
           onClick={handleRegister}
           className="mt-[10px] h-[42px] rounded-[12px] bg-[#0a5c34] text-white text-[16px]"
         >
@@ -45,4 +90,3 @@ export default function RegisterForm({ setIsLogin }) {
     </div>
   );
 }
-
