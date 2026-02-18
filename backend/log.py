@@ -1,13 +1,19 @@
 from flask import Flask, request, jsonify, session
+from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 from db import get_db
 from flask_cors import CORS
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 CORS(app, supports_credentials=True)
 
 db = get_db()
+
+PORT = os.getenv("PORT")
 
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -42,4 +48,4 @@ def register():
         return jsonify({"status": "failed"})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=6500)
+    app.run(debug=True, port=PORT)

@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 export default function RegisterForm({ setIsLogin }) {
   const navigate = useNavigate();
   const [studentId, setStudentId] = useState("");
@@ -11,7 +13,7 @@ export default function RegisterForm({ setIsLogin }) {
 
   const handleRegister = async () => {
     try {
-      const res = await fetch("http://localhost:6500/api/register", {
+      const res = await fetch(`${apiUrl}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,7 +35,7 @@ export default function RegisterForm({ setIsLogin }) {
     }
   };
 
-  console.log(studentId);
+  // console.log(studentId);
 
   return (
     <div className="min-w-full flex items-center justify-center">

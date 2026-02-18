@@ -1,15 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
+const apiUrl = import.meta.env.VITE_API_URL;
 
+export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:6500/api/login", {
+      const res = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,7 +36,6 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   return (
     <div className="min-w-full flex items-center justify-center">
       <div className="w-[360px] bg-white p-[26px] rounded-[14px] shadow-md flex flex-col gap-[10px]">
-        
         <label>Email</label>
         <input
           value={email}
@@ -53,7 +53,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
         <button
           onClick={handleLogin}
-          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded"
+          className="mt-[20px] h-[42px] bg-[#0a5c34] text-white rounded-[12px]"
         >
           Login
         </button>
@@ -64,7 +64,6 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
         >
           Sign up
         </div>
-
       </div>
     </div>
   );
