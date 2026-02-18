@@ -1,4 +1,4 @@
-import FacilityCard from "./FacilityCard"
+import FacilityCard from "../components/FacilityCard"
 
 function Facilities() {
   const data = [
@@ -14,7 +14,7 @@ function Facilities() {
     <div className="px-[60px] py-[40px]">
       <p className="text-[#005E40] text-4xl font-bold ...">Facilities</p>
 
-      <div className="bg-[#e6e6e6] p-10 rounded-[25px] grid grid-cols-3 gap-10 shadow-lg">
+      <div className="bg-[#e6e6e6] p-10 rounded-[5px] grid grid-cols-3 gap-10 shadow-lg">
         {data.map((item, index) => (
           <FacilityCard key={index} img={item.img} name={item.name} />
         ))}
