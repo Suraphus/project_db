@@ -13,6 +13,11 @@ export default function RegisterForm({ setIsLogin }) {
   const [password, setPassword] = useState("");
 
   const handleRegister = async () => {
+    if (!student_id || !name || !surname || !email || !password) {
+      toast.error("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      return;
+    }
+
     try {
       const res = await fetch(`${apiUrl}/api/register`, {
         method: "POST",
@@ -20,7 +25,7 @@ export default function RegisterForm({ setIsLogin }) {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ student_id, name, surname, email, password }),
+        body: JSON.stringify({ studentId: student_id, name, surname, email, password }),
       });
 
       const data = await res.json();
