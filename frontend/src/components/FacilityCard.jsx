@@ -14,5 +14,4 @@ function FacilityCard({ img, name }) {
     </div>
   )
 }
-
 export default FacilityCard

@@ -1,5 +1,5 @@
-create database KU_facility;
-use KU_facility;
+create database db_init;
+use db_init;
 
 CREATE TABLE user (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -20,7 +20,7 @@ CREATE TABLE profile_student (
         ON DELETE CASCADE
 );
 
-CREATE TABLE court (
+CREATE TABLE courts (
     court_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     location VARCHAR(255),
@@ -37,7 +37,7 @@ CREATE TABLE TimeSlot (
 
     CONSTRAINT fk_timeslot_court
         FOREIGN KEY (court_id)
-        REFERENCES court(court_id)
+        REFERENCES courts(court_id)
         ON DELETE CASCADE
 );
 
@@ -47,6 +47,7 @@ CREATE TABLE booking (
     court_id INT NOT NULL,
     date DATE NOT NULL,
     time_id INT NOT NULL,
+    status ENUM('active','cancelled') DEFAULT 'active',
     create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_booking_user
@@ -56,7 +57,7 @@ CREATE TABLE booking (
 
     CONSTRAINT fk_booking_court
         FOREIGN KEY (court_id)
-        REFERENCES court(court_id)
+        REFERENCES courts(court_id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_booking_time
@@ -66,4 +67,29 @@ CREATE TABLE booking (
 
     CONSTRAINT unique_booking UNIQUE (court_id, date, time_id)
 );
+
+DELIMITER $$
+CREATE TRIGGER trg_booking_insert
+AFTER INSERT ON booking
+FOR EACH ROW
+BEGIN
+    UPDATE court
+    SET cur_pp = cur_pp + 1
+    WHERE court_id = NEW.court_id;
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER trg_booking_delete
+AFTER UPDATE ON booking
+FOR EACH ROW
+BEGIN
+
+    UPDATE court
+    SET cur_pp = cur_pp - 1
+    WHERE court_id = OLD.court_id;
+
+END$$
+DELIMITER ;
 
