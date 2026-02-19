@@ -9,6 +9,11 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert("กรุณากรอก Email และ Password");
+      return;
+    }
+
     try {
       const res = await fetch(`${apiUrl}/api/login`, {
         method: "POST",

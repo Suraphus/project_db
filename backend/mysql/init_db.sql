@@ -77,7 +77,7 @@ CREATE TRIGGER trg_booking_insert
 AFTER INSERT ON booking
 FOR EACH ROW
 BEGIN
-    UPDATE court
+    UPDATE courts
     SET cur_pp = cur_pp + 1
     WHERE court_id = NEW.court_id;
 END$$
@@ -90,7 +90,7 @@ AFTER UPDATE ON booking
 FOR EACH ROW
 BEGIN
 
-    UPDATE court
+    UPDATE courts
     SET cur_pp = cur_pp - 1
     WHERE court_id = OLD.court_id;
 

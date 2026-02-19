@@ -1,8 +1,14 @@
 from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
 
-def get_mongo_db():
-    client = MongoClient(
-        "mongodb://root:examplepassword@mongodb:27017/"
-    )
-    db = client["register_log"]
-    return db
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+_client = None
+
+def get_db():
+    global _client
+    if _client is None:
+        _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    return _client["project_db"]
