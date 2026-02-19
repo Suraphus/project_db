@@ -53,7 +53,10 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
         <button
           onClick={handleLogin}
-          className="mt-[20px] h-[42px] bg-[#0a5c34] text-white rounded-[12px]"
+
+          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer"
+
+
         >
           Login
         </button>

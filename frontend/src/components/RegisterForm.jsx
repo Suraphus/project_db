@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast, Bounce } from "react-toastify";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -23,19 +24,27 @@ export default function RegisterForm({ setIsLogin }) {
       });
 
       const data = await res.json();
+
       if (res.ok) {
-        setIsLogin(true);
-        navigate("/login");
+        toast.success("Register Successfully!", {
+          position: "bottom-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
+
+        setTimeout(() => {
+          setIsLogin(true);
+          navigate("/login");
+        }, 1500);
       } else {
-        alert(data.message);
+        toast.error(data.message);
       }
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      toast.error("Server error");
     }
   };
 
-  // console.log(studentId);
 
   return (
     <div className="min-w-full flex items-center justify-center">
@@ -77,7 +86,7 @@ export default function RegisterForm({ setIsLogin }) {
 
         <button
           onClick={handleRegister}
-          className="mt-[10px] h-[42px] rounded-[12px] bg-[#0a5c34] text-white text-[16px]"
+          className="mt-[10px] h-[42px] rounded-[12px] bg-[#0a5c34] text-white text-[16px] hover:cursor-pointer"
         >
           Register
         </button>

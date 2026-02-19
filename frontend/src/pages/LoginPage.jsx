@@ -7,7 +7,7 @@ export default function LoginPage({ setIsAuthenticated }) {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center h-full">
       <div className="w-[1120px] h-[640px] bg-[#e6e8ea] rounded shadow-lg flex overflow-hidden">
         
         <LeftPanel isLogin={isLogin} setIsLogin={setIsLogin} />
