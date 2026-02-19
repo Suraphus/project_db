@@ -24,7 +24,8 @@ def register():
 
     email = data["email"]
     password = data["password"]
-    name = data["name"]
+    firstname = data["firstname"]
+    lastname = data["lastname"]
     student_id = data["student_id"]
 
     try:
@@ -42,14 +43,15 @@ def register():
 
         # create profile
         sql_profile = """
-        INSERT INTO profile_student (user_id,student_id,name)
-        VALUES (%s,%s,%s)
+        INSERT INTO profile_student (user_id,student_id,firstname,lastname)
+        VALUES (%s,%s,%s,%s)
         """
 
         cursor.execute(sql_profile, (
             user_id,
             student_id,
-            name
+            firstname,
+            lastname
         ))
 
         db.commit()
@@ -59,7 +61,8 @@ def register():
             "user": {
                 "user_id": user_id,
                 "email": email,
-                "name": name,
+                "firstname": firstname,
+                "lastname": lastname,
                 "student_id": student_id
             }
         })
@@ -79,7 +82,8 @@ def login():
     SELECT
         user.user_id,
         user.email,
-        profile_student.name,
+        profile_student.firstname,
+        profile_student.lastname,
         profile_student.student_id
     FROM user
     JOIN profile_student
