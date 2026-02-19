@@ -1,3 +1,4 @@
+drop database if exists db_init;
 create database db_init;
 use db_init;
 
@@ -12,7 +13,8 @@ CREATE TABLE user (
 CREATE TABLE profile_student (
     user_id INT PRIMARY KEY,
     student_id VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
+    firstname VARCHAR(100) NOT NULL,
+    lastname VARCHAR(100) NOT NULL,
 
     CONSTRAINT fk_profile_user
         FOREIGN KEY (user_id)
@@ -26,7 +28,9 @@ CREATE TABLE courts (
     location VARCHAR(255),
     status ENUM('available','maintenance','closed') DEFAULT 'available',
     type VARCHAR(50),
-    max_pp INT NOT NULL
+    surface VARCHAR(50),
+    max_pp INT NOT NULL,
+    cur_pp INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE TimeSlot (
@@ -92,4 +96,3 @@ BEGIN
 
 END$$
 DELIMITER ;
-

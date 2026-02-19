@@ -11,5 +11,18 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    ports:
+      - "6500:6500"
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepassword
+      MYSQL_DATABASE: db_init
+    volumes:
+      - mysql-data:/var/lib/mysql
+
 volumes:
   mongo-data:
+  mysql-data:
