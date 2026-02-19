@@ -1,11 +1,20 @@
+import { toast, Bounce
+ } from "react-toastify";
 
 export default function RegisterForm({ setIsLogin }) {
 
   const handleRegister = () => {
-  
-
-    alert("Register successful!")
-
+    toast.success('Register Successfully!', {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+        });
     setIsLogin(true)
   }
 
@@ -30,7 +39,7 @@ export default function RegisterForm({ setIsLogin }) {
 
         <button 
           onClick={handleRegister}
-          className="mt-[10px] h-[42px] rounded-[12px] bg-[#0a5c34] text-white text-[16px]"
+          className="mt-[10px] h-[42px] rounded-[12px] bg-[#0a5c34] text-white text-[16px] hover:cursor-pointer"
         >
           Register
         </button>

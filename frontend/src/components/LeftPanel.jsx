@@ -22,7 +22,7 @@ export default function LeftPanel({ isLogin, setIsLogin }) {
         className={`w-[75%] py-[14px] rounded-[12px] text-[16px] font-semibold transition ${
           isLogin
             ? "bg-[#f7f7f7] text-[#145a32] shadow-[inset_0_0_0_2px_#ececec]"
-            : "bg-[#e3e3e3] text-[#9aa0a6]"
+            : "bg-[#e3e3e3] text-[#9aa0a6]  hover:cursor-pointer hover:bg-[#0a5c34] hover:text-white "
         }`}
         onClick={() => setIsLogin(true)}
       >
@@ -30,10 +30,10 @@ export default function LeftPanel({ isLogin, setIsLogin }) {
       </button>
 
       <button
-        className={`w-[75%] py-[14px] rounded-[12px] text-[16px] font-semibold transition ${
+        className={`w-[75%]  py-[14px] rounded-[12px] text-[16px] font-semibold transition ${
           !isLogin
             ? "bg-[#f7f7f7] text-[#145a32] shadow-[inset_0_0_0_2px_#ececec]"
-            : "bg-[#e3e3e3] text-[#9aa0a6]"
+            : "bg-[#e3e3e3] text-[#9aa0a6] hover:cursor-pointer hover:bg-[#0a5c34] hover:text-white"
         }`}
         onClick={() => setIsLogin(false)}
       >

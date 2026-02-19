@@ -3,17 +3,19 @@ import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import FacilitiesPage from "./pages/FacilitiesPage";
 import Topbar from "./components/Topbar";
+import { Fields } from "./pages/Fields";
+import {ToastContainer} from 'react-toastify'
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#cfd2d4] font-['Segoe_UI',sans-serif]">
+    <>
+        <div className="min-h-screen bg-[#cfd2d4] font-['Segoe_UI',sans-serif]">
       
       {/* แสดง Topbar เฉพาะตอน login แล้ว */}
-      {isAuthenticated && (
         <Topbar setIsAuthenticated={setIsAuthenticated} />
-      )}
+    
 
       <Routes>
 
@@ -40,7 +42,12 @@ export default function App() {
           }
         />
 
+        <Route path="/fields" element = {<Fields />} />
+
       </Routes>
     </div>
+    <ToastContainer />
+    </>
+
   );
 }
