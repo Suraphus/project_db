@@ -12,7 +12,7 @@ def get_db():
 
         client = MongoClient("mongodb://root:examplepassword@localhost:27017/")
         client.admin.command('ping')
-        db = client['instagram_db']
+        db = client['register_log']
         
         # Return the database object to be used by the Flask application
         return db
