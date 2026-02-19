@@ -1,3 +1,4 @@
+drop database if exists db_init;
 create database db_init;
 use db_init;
 
@@ -95,4 +96,3 @@ BEGIN
 
 END$$
 DELIMITER ;
-

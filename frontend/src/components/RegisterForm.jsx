@@ -6,7 +6,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function RegisterForm({ setIsLogin }) {
   const navigate = useNavigate();
-  const [studentId, setStudentId] = useState("");
+  const [student_id, setStudentId] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
@@ -20,7 +20,7 @@ export default function RegisterForm({ setIsLogin }) {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ studentId, name, surname, email, password }),
+        body: JSON.stringify({ student_id, name, surname, email, password }),
       });
 
       const data = await res.json();
@@ -45,13 +45,12 @@ export default function RegisterForm({ setIsLogin }) {
     }
   };
 
-
   return (
     <div className="min-w-full flex items-center justify-center">
       <div className="w-[360px] bg-white p-[26px] rounded-[14px] shadow-[0_4px_8px_rgba(0,0,0,.25)] flex flex-col gap-[10px]">
         <label className="text-[12px] text-[#555]">Student ID</label>
         <input
-          value={studentId}
+          value={student_id}
           onChange={(e) => setStudentId(e.target.value)}
           className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
         />

@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+# from dotenv import load_dotenv
 from flask_cors import CORS
-import mysql.connector
+import pymysql
 
 app = Flask(__name__)
 CORS(app)
+# load_dotenv()
 
 db = mysql.connector.connect(
     host="localhost",
@@ -18,7 +20,7 @@ cursor = db.cursor(dictionary=True)
 def home():
     return "flask + Mysql working"
 
-@app.route("/auth/register", methods=["POST"])
+@app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
 
@@ -73,7 +75,7 @@ def register():
     
 
 
-@app.route("/auth/login", methods=["POST"])
+@app.route("/api/login", methods=["POST"])
 def login():
 
     data = request.json
