@@ -1,12 +1,26 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { House } from "lucide-react";
+import { useCurrentUser } from "../Context/AuthContext";
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 function Topbar({ setIsAuthenticated }) {
   const navigate = useNavigate();
-  const handleLogout = () => {
+  const { user, loading } = useCurrentUser();
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
+
+  const handleLogout = async () => {
+    await fetch(`${apiUrl}/api/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
     setIsAuthenticated(false);
-    navigate("/login");
+    window.location.href = "/login";
   };
+
+  // if (!loading) return null;
 
   return (
     <div className=" bg-[#0a5c34] text-white h-[60px] flex justify-between items-center px-10 text-[22px] font-medium">
@@ -21,8 +35,13 @@ function Topbar({ setIsAuthenticated }) {
         <div>Kasetsart University</div>
       </div>
       <div className="flex gap-5 items-center text-[18px]">
-        <span>Name : Student_ID</span>
-
+        {!isLoginPage && user && (
+          <>
+            <span>
+              {user.firstname} {user.lastname} ({user.student_id})
+            </span>
+          </>
+        )}
         <button
           onClick={handleLogout}
           className="text-yellow-400 underline font-medium hover:cursor-pointer"

@@ -10,7 +10,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
-CORS(app, supports_credentials=True)
+CORS(app,
+     supports_credentials=True,
+     origins=["http://localhost:5173"])
 
 db_mongo = get_mongo_db()
 db_sql = get_mysql_db()
@@ -88,12 +90,43 @@ def login():
 
         profile = cursor.fetchone()
 
-        return jsonify({
-            "token": str(profile["user_id"]),
-            "user": profile
-        })
+        session["user_id"] = profile["user_id"]
+        session["firstname"] = profile["firstname"]
+        session["lastname"] = profile["lastname"]
+        session["student_id"] = profile["student_id"]
+        return jsonify({"message": "success"})
 
-    return jsonify({"message": "Invalid login"}), 401
+
+    return jsonify({"message": "Wrong Email or Password"}), 401
+
+@app.route("/api/me")
+def get_current_user():
+    if "user_id" not in session:
+        return jsonify({"message": "Not logged in"}), 401
+
+    cursor = db_sql.cursor()
+
+    cursor.execute("""
+        SELECT
+            user.user_id,
+            user.email,
+            profile_student.firstname,
+            profile_student.lastname,
+            profile_student.student_id
+        FROM user
+        JOIN profile_student
+        ON user.user_id = profile_student.user_id
+        WHERE user.user_id=%s
+    """, (session["user_id"],))
+
+    profile = cursor.fetchone()
+
+    return jsonify(profile)
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "logged out"})
 
     
 # @app.route("/courts",methods=["GET"])

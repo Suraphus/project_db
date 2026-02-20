@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useCurrentUser } from "../Context/AuthContext";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   const navigate = useNavigate();
+  const { fetchUser } = useCurrentUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -28,6 +30,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
       if (res.ok) {
         setIsAuthenticated(true);
+        await fetchUser();
         navigate("/facilities");
       } else {
         alert(data.message);
@@ -58,10 +61,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
         <button
           onClick={handleLogin}
-
           className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer"
-
-
         >
           Login
         </button>
