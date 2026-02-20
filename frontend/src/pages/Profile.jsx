@@ -10,9 +10,9 @@ export default function ProfilePage() {
 
   // สมมติข้อมูลประวัติการจอง
   const [bookings, setBookings] = useState([
-    { id: 1, service: "จองสนามฟุตบอล", date: "2026-02-20", status: "สำเร็จ", price: "500" },
-    { id: 2, service: "จองห้องประชุม A", date: "2026-02-25", status: "รอดำเนินการ", price: "1,200" },
-    { id: 3, service: "จองคอร์ทเทนนิส", date: "2026-01-15", status: "ยกเลิก", price: "300" },
+    { id: 1, service: "สนามฟุตบอล", date: "2026-02-20", status: "สำเร็จ", player: "5", maxPlayer: "30" },
+    { id: 2, service: "คอร์ดแบดมินตัน", date: "2026-02-25", status: "รอดำเนินการ", player: "2", maxPlayer: "8" },
+    { id: 3, service: "คอร์ทเทนนิส", date: "2026-01-15", status: "ยกเลิก", player: "3", maxPlayer: "8" },
   ]);
 
   return (
@@ -45,9 +45,9 @@ export default function ProfilePage() {
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-600 uppercase text-sm">
                 <tr>
-                  <th className="px-6 py-4">บริการ</th>
+                  <th className="px-6 py-4">สนาม</th>
                   <th className="px-6 py-4">วันที่</th>
-                  <th className="px-6 py-4">ราคา</th>
+                  <th className="px-6 py-4">จำนวนผู้เล่น</th>
                   <th className="px-6 py-4">สถานะ</th>
                 </tr>
               </thead>
@@ -56,7 +56,7 @@ export default function ProfilePage() {
                   <tr key={item.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 font-medium text-gray-700">{item.service}</td>
                     <td className="px-6 py-4 text-gray-600">{item.date}</td>
-                    <td className="px-6 py-4 text-gray-600">฿{item.price}</td>
+                    <td className="px-6 py-4 text-gray-600">{item.player}/{item.maxPlayer}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs ${
                         item.status === "สำเร็จ" ? "bg-green-100 text-green-700" :
