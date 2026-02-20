@@ -25,7 +25,13 @@ export default function RegisterForm({ setIsLogin }) {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ studentId: student_id, name, surname, email, password }),
+        body: JSON.stringify({
+          student_id: student_id,
+          name,
+          surname,
+          email,
+          password,
+        }),
       });
 
       const data = await res.json();

@@ -16,12 +16,26 @@ services:
     container_name: mysql
     restart: always
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: examplepassword
       MYSQL_DATABASE: db_init
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+
+  backend:
+    build: .
+    container_name: backend
+    restart: always
+    ports:
+      - "6500:6500"
+    depends_on:
+      - mysql
+      - mongodb
+    env_file:
+      - .env
+    command: python test_db.py
 
 volumes:
   mongo-data:

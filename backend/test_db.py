@@ -63,7 +63,7 @@ def register():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
-    cursor = db_sql.cursor(dictionary=True)
+    cursor = db_sql.cursor()
 
     email = data["email"]
     password = data["password"]
@@ -189,4 +189,4 @@ def login():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port = PORT)
+    app.run(host="0.0.0.0", port=int(PORT))
