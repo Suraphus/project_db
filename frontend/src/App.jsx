@@ -5,6 +5,7 @@ import FacilitiesPage from "./pages/FacilitiesPage";
 import Topbar from "./components/Topbar";
 import { Fields } from "./pages/Fields";
 import {ToastContainer} from 'react-toastify'
+import ProfilePage from "./pages/Profile";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,6 +22,7 @@ export default function App() {
 
         {/* เข้าเว็บครั้งแรก → ไป login */}
         <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* หน้า Login */}
         <Route
