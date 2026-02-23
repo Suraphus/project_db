@@ -10,6 +10,10 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
+app.config.update(
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_SECURE='True'
+)
 CORS(app,
      supports_credentials=True,
      origins=["http://localhost:5173"])
@@ -75,6 +79,7 @@ def login():
 
     if user and check_password_hash(user["password"], password):
 
+        
         cursor.execute("""
             SELECT
                 user.user_id,
@@ -89,7 +94,6 @@ def login():
         """, (user["user_id"],))
 
         profile = cursor.fetchone()
-
         session["user_id"] = profile["user_id"]
         session["firstname"] = profile["firstname"]
         session["lastname"] = profile["lastname"]

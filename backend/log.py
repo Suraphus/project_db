@@ -9,7 +9,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
-CORS(app, supports_credentials=True, origins=r"http://localhost:\d+")
+CORS(app, supports_credentials=True, origins="http://localhost:5173")
 
 
 PORT = os.getenv("PORT")

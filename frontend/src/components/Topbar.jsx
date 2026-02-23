@@ -38,7 +38,7 @@ function Topbar({ setIsAuthenticated }) {
         {!isLoginPage && user && (
           <>
             <span>
-              {user.firstname} {user.lastname} ({user.student_id})
+              {user.firstname} {user.lastname} : {user.student_id}
             </span>
           </>
         )}
