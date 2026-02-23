@@ -32,6 +32,11 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
         setIsAuthenticated(true);
         await fetchUser();
         navigate("/facilities");
+        toast.success("Login successful!",{autoClose:1700,
+                                           position:"top-right",
+                                           pauseOnHover:false,
+                                           closeOnClick:true
+                                          });
         
       } else {
         alert(data.message);
