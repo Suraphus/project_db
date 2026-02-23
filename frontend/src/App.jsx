@@ -37,7 +37,7 @@ export default function App() {
             isAuthenticated ? (
               <FacilitiesPage />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/login"/>
             )
           }
         />

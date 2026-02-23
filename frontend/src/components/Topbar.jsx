@@ -44,7 +44,7 @@ function Topbar({ setIsAuthenticated }) {
         )}
         <button
           onClick={handleLogout}
-          className="text-yellow-400 underline font-medium hover:cursor-pointer"
+          className="text-yellow-400 underline font-medium hover:cursor-pointer hover:scale-110 transition-all"
         >
           logout
         </button>

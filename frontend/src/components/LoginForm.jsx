@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useCurrentUser } from "../Context/AuthContext";
-
+import {toast} from "react-toastify";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
@@ -32,6 +32,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
         setIsAuthenticated(true);
         await fetchUser();
         navigate("/facilities");
+        
       } else {
         alert(data.message);
       }
@@ -61,7 +62,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
         <button
           onClick={handleLogin}
-          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer"
+          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer hover:scale-105 transition-all"
         >
           Login
         </button>
