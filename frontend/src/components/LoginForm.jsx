@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -7,7 +8,8 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [error,setError]=useState(null);
+  
   const handleLogin = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/login`, {
@@ -23,13 +25,21 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
       if (res.ok) {
         setIsAuthenticated(true);
+        toast.success("Login successful!", { 
+                                              position: "top-right", 
+                                              autoClose: 1500, 
+                                              hideProgressBar: false, 
+                                              closeOnClick: true, 
+                                              pauseOnHover: false, 
+                                              draggable: false, 
+                                              theme: "colored", });
         navigate("/facilities");
       } else {
-        alert(data.message);
+        setError(data.message);
       }
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      setError("Server error");
     }
   };
 
@@ -67,6 +77,18 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
         >
           Sign up
         </div>
+        {error && (
+    <div className="mt-4 rounded bg-red-100 border border-red-400 text-red-700 px-4 py-3 ">
+      <strong className="font-bold">Error: </strong>
+      <span className="block sm:inline">{error}</span>
+      <button
+        onClick={() => setError(null)}
+        className="ml-2 text-red-700 hover:text-red-900"
+      >
+        ✕
+      </button>
+    </div>
+      )}
       </div>
     </div>
   );

@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
+import Calendar from "react-calendar"; 
+import "react-calendar/dist/Calendar.css";
+
 
 const mockField = [
   {
@@ -36,7 +39,7 @@ export const Fields = () => {
 
   const Navigate=useNavigate()
   const [isPopup,setIsPopup] = useState(false)
-
+  const [selectedDate, setSelectedDate] = useState(new Date());
   return (
     
 
@@ -88,9 +91,13 @@ export const Fields = () => {
             {isPopup && (
   <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-white p-10 rounded-2xl shadow-xl">
+      <p className='mb-2'>
+        
+      </p>
+      <Calendar onChange={setSelectedDate} value={selectedDate} className="mt-4 rounded border border-gray-300" />
       <button
         onClick={() => setIsPopup(false)}
-        className="block mt-4 text-red-500"
+        className="block mt-4 text-red-500 hover:cursor-pointer hover:scale-110 transition-all"
       > 
         Close
       </button>
