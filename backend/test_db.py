@@ -5,14 +5,15 @@ from db_mongo import get_mongo_db
 from db_sql import get_mysql_db
 from flask_cors import CORS
 import os
+import time
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 app.config.update(
-    SESSION_COOKIE_SAMESITE='None',
-    SESSION_COOKIE_SECURE='True'
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=False
 )
 CORS(app,
      supports_credentials=True,
@@ -21,7 +22,15 @@ CORS(app,
      allow_headers=["Content-Type", "Authorization"])
 
 db_mongo = get_mongo_db()
-db_sql = get_mysql_db()
+
+
+def get_db_sql():
+    for _ in range(20):
+        try:
+            return get_mysql_db()
+        except Exception:
+            time.sleep(1)
+    return get_mysql_db()
 
 
 PORT = os.getenv("PORT")
@@ -33,7 +42,8 @@ def home():
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
-    cursor = db_sql.cursor()
+    db = get_db_sql()
+    cursor = db.cursor()
 
     email = data["email"]
     password = generate_password_hash(data["password"])
@@ -58,81 +68,241 @@ def register():
                 "INSERT INTO profile_student (user_id,student_id,firstname,lastname) VALUES (%s,%s,%s,%s)",
                 (user_id, student_id, firstname, lastname)
             )
-            db_sql.commit()
+            db.commit()
 
             return jsonify({"status": "success"})
         else:
             return jsonify({"status": "failed"})
             
     except Exception as e:
-        db_sql.rollback()
+        db.rollback()
         return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
 
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
-    cursor = db_sql.cursor()
+    db = get_db_sql()
+    cursor = db.cursor()
 
-    email = data["email"]
-    password = data["password"]
+    try:
+        email = data["email"]
+        password = data["password"]
 
-    cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
-    user = cursor.fetchone()
+        cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
+        user = cursor.fetchone()
 
-    if user and check_password_hash(user["password"], password):
+        if user and check_password_hash(user["password"], password):
+            cursor.execute("""
+                SELECT
+                    user.user_id,
+                    user.email,
+                    user.role,
+                    profile_student.firstname,
+                    profile_student.lastname,
+                    profile_student.student_id
+                FROM user
+                LEFT JOIN profile_student
+                    ON user.user_id = profile_student.user_id
+                WHERE user.user_id=%s
+            """, (user["user_id"],))
 
-        
-        cursor.execute("""
-            SELECT
-                user.user_id,
-                user.email,
-                profile_student.firstname,
-                profile_student.lastname, 
-                profile_student.student_id
-            FROM user
-            JOIN profile_student
-                ON user.user_id = profile_student.user_id
-            WHERE user.user_id=%s
-        """, (user["user_id"],))
+            profile = cursor.fetchone()
+            if not profile:
+                return jsonify({"message": "User profile not found"}), 404
 
-        profile = cursor.fetchone()
-        session["user_id"] = profile["user_id"]
-        session["firstname"] = profile["firstname"]
-        session["lastname"] = profile["lastname"]
-        session["student_id"] = profile["student_id"]
-        return jsonify({"message": "success"})
+            session["user_id"] = profile["user_id"]
+            session["firstname"] = profile.get("firstname")
+            session["lastname"] = profile.get("lastname")
+            session["student_id"] = profile.get("student_id")
+            session["role"] = profile["role"]
+            return jsonify({"message": "success"})
 
-
-    return jsonify({"message": "Wrong Email or Password"}), 401
+        return jsonify({"message": "Wrong Email or Password"}), 401
+    finally:
+        cursor.close()
+        db.close()
 
 @app.route("/api/me")
 def get_current_user():
     if "user_id" not in session:
         return jsonify({"message": "Not logged in"}), 401
 
-    cursor = db_sql.cursor()
+    db = get_db_sql()
+    cursor = db.cursor()
 
-    cursor.execute("""
-        SELECT
-            user.user_id,
-            user.email,
-            profile_student.firstname,
-            profile_student.lastname,
-            profile_student.student_id
-        FROM user
-        JOIN profile_student
-        ON user.user_id = profile_student.user_id
-        WHERE user.user_id=%s
-    """, (session["user_id"],))
+    try:
+        cursor.execute("""
+            SELECT
+                user.user_id,
+                user.email,
+                user.role,
+                profile_student.firstname,
+                profile_student.lastname,
+                profile_student.student_id
+            FROM user
+            LEFT JOIN profile_student
+            ON user.user_id = profile_student.user_id
+            WHERE user.user_id=%s
+        """, (session["user_id"],))
 
-    profile = cursor.fetchone()
+        profile = cursor.fetchone()
+        if not profile:
+            return jsonify({"message": "User not found"}), 404
 
-    return jsonify(profile)
+        return jsonify(profile)
+    finally:
+        cursor.close()
+        db.close()
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
     session.clear()
     return jsonify({"message": "logged out"})
+
+
+def is_admin():
+    user_id = session.get("user_id")
+    if not user_id:
+        return False
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute("SELECT role FROM user WHERE user_id=%s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    db.close()
+    return bool(user and user["role"] == "admin")
+
+
+@app.route("/api/admin/facilities", methods=["POST"])
+def create_facility():
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    data = request.json or {}
+    name = data.get("name")
+    max_pp = data.get("max_pp")
+
+    if not name or max_pp is None:
+        return jsonify({"message": "name and max_pp are required"}), 400
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO courts (name, location, status, type, surface, max_pp, cur_pp)
+            VALUES (%s, %s, %s, %s, %s, %s, 0)
+            """,
+            (
+                name,
+                data.get("location"),
+                data.get("status", "available"),
+                data.get("type"),
+                data.get("surface"),
+                int(max_pp),
+            ),
+        )
+        db.commit()
+        return jsonify({"message": "Facility created", "court_id": cursor.lastrowid})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+
+
+@app.route("/api/admin/users", methods=["GET"])
+def list_users():
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        SELECT
+            user.user_id,
+            user.email,
+            user.role,
+            profile_student.student_id,
+            profile_student.firstname,
+            profile_student.lastname
+        FROM user
+        LEFT JOIN profile_student ON profile_student.user_id = user.user_id
+        ORDER BY user.created_at DESC
+        """
+    )
+    users = cursor.fetchall()
+    cursor.close()
+    db.close()
+    return jsonify(users)
+
+
+@app.route("/api/admin/users/<int:target_user_id>/kick", methods=["DELETE"])
+def kick_user(target_user_id):
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    if session.get("user_id") == target_user_id:
+        return jsonify({"message": "You cannot kick yourself"}), 400
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute("SELECT role FROM user WHERE user_id=%s", (target_user_id,))
+    user = cursor.fetchone()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    if user["role"] == "admin":
+        return jsonify({"message": "Cannot kick another admin"}), 400
+
+    try:
+        cursor.execute("DELETE FROM user WHERE user_id=%s", (target_user_id,))
+        db.commit()
+        return jsonify({"message": "User kicked"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+
+
+@app.route("/api/admin/logs", methods=["GET"])
+def get_logs():
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute(
+        """
+        SELECT
+            booking.booking_id,
+            booking.status,
+            booking.date,
+            booking.create_at,
+            user.user_id,
+            user.email,
+            profile_student.firstname,
+            profile_student.lastname,
+            courts.name AS court_name
+        FROM booking
+        JOIN user ON user.user_id = booking.user_id
+        LEFT JOIN profile_student ON profile_student.user_id = user.user_id
+        JOIN courts ON courts.court_id = booking.court_id
+        ORDER BY booking.create_at DESC
+        LIMIT 100
+        """
+    )
+    logs = cursor.fetchall()
+    cursor.close()
+    db.close()
+    return jsonify(logs)
 
     
 # @app.route("/courts",methods=["GET"])

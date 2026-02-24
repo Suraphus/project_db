@@ -23,6 +23,11 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pexamplepassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   backend:
     build: .
@@ -31,10 +36,18 @@ services:
     ports:
       - "6500:6500"
     depends_on:
-      - mysql
-      - mongodb
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
     env_file:
       - .env
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: examplepassword
+      MYSQL_DATABASE: db_init
     command: python test_db.py
 
 volumes:
