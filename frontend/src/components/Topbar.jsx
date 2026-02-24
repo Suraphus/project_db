@@ -1,14 +1,15 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { House } from "lucide-react";
-import { useCurrentUser } from "../Context/AuthContext";
+import { useCurrentUser } from "../Context/useCurrentUser";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function Topbar({ setIsAuthenticated }) {
   const navigate = useNavigate();
-  const { user, loading } = useCurrentUser();
+  const { user } = useCurrentUser();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
+  const isAdmin = user?.role === "admin";
 
   const handleLogout = async () => {
     await fetch(`${apiUrl}/api/logout`, {
@@ -35,6 +36,14 @@ function Topbar({ setIsAuthenticated }) {
         <div>Kasetsart University</div>
       </div>
       <div className="flex gap-5 items-center text-[18px]">
+        {!isLoginPage && isAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="text-yellow-400 underline font-medium hover:cursor-pointer hover:scale-110 transition-all"
+          >
+            admin
+          </button>
+        )}
         {!isLoginPage && user && (
           <>
             <span>

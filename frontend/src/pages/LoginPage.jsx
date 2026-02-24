@@ -2,7 +2,6 @@ import { useState } from "react";
 import LeftPanel from "../components/LeftPanel";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
-import { toast } from "react-toastify";
 
 export default function LoginPage({ setIsAuthenticated }) {
   const [isLogin, setIsLogin] = useState(true);

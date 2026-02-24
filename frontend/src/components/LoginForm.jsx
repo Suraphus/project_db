@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useCurrentUser } from "../Context/AuthContext";
+import { useCurrentUser } from "../Context/useCurrentUser";
 import {toast} from "react-toastify";
 const apiUrl = import.meta.env.VITE_API_URL;
 
