@@ -1,5 +1,6 @@
+import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { House } from "lucide-react";
+import { House, User, LogOut } from "lucide-react";
 import { useCurrentUser } from "../Context/useCurrentUser";
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -10,6 +11,7 @@ function Topbar({ setIsAuthenticated }) {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "admin";
+  const [showProfileMenu, setShowProfileMenu] = React.useState(false);
 
   const handleLogout = async () => {
     await fetch(`${apiUrl}/api/logout`, {
@@ -45,18 +47,40 @@ function Topbar({ setIsAuthenticated }) {
           </button>
         )}
         {!isLoginPage && user && (
-          <>
-            <span>
-              {user.firstname} {user.lastname} : {user.student_id}
+          <div className="relative">
+            <span className="text-xl font-bold mb-2 mr-4">
+              Login as : {user.student_id}
             </span>
-          </>
+
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="bg-green-400 text-[#0a5c34] p-2 rounded-full hover:scale-110 hover:bg-yellow-300 transition-all shadow-md cursor-pointer"
+            >
+              <User size={20} />
+            </button>
+
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-3 w-40 bg-white text-black rounded-lg shadow-lg py-2">
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  Profile
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
+            )}
+          </div>
         )}
-        <button
-          onClick={handleLogout}
-          className="text-yellow-400 underline font-medium hover:cursor-pointer hover:scale-110 transition-all"
-        >
-          logout
-        </button>
       </div>
     </div>
   );

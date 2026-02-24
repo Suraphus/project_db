@@ -1,9 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
+
 import LoginPage from "./pages/LoginPage";
 import FacilitiesPage from "./pages/FacilitiesPage";
 import Topbar from "./components/Topbar";
+import ProfilePage from "./pages/ProfilePage";
+
 import { Fields } from "./pages/Fields";
 import AdminPage from "./pages/AdminPage";
 
@@ -56,6 +59,7 @@ export default function App() {
             path="/fields"
             element={isAuthenticated ? <Fields /> : <Navigate to="/login" />}
           />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </div>
       <ToastContainer />
