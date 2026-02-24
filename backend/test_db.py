@@ -16,7 +16,9 @@ app.config.update(
 )
 CORS(app,
      supports_credentials=True,
-     origins=["http://localhost:5173"])
+     resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:5174"]}},
+     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"])
 
 db_mongo = get_mongo_db()
 db_sql = get_mysql_db()
