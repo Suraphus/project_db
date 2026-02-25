@@ -93,8 +93,6 @@ def login():
 
         cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
         user = cursor.fetchone()
-        if not user:
-            return jsonify({"message": "Email not Found Please Sign-up"}), 401 
 
         if user and check_password_hash(user["password"], password):
             cursor.execute("""
@@ -121,8 +119,8 @@ def login():
             session["student_id"] = profile.get("student_id")
             session["role"] = profile["role"]
             return jsonify({"message": "success"})
-        
-        return jsonify({"message": "Wrong Email or Password"}), 401 
+
+        return jsonify({"message": "Wrong Email or Password"}), 401
     finally:
         cursor.close()
         db.close()
@@ -311,7 +309,7 @@ def add_field():
         img_url = data["image_url"]
 
         cursor.execute("INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUE (%s,%s,%s,%s,%s,%s,%s)"
-                    ,(name, location, type, surface, status, max_pp,img_url))
+                    ,(name, location, type, surface, status, max_pp, img_url))
         
         db.commit()
         return jsonify({"message": "Facility created"})
@@ -412,6 +410,37 @@ def add_field():
 #     return jsonify({"message": "cancelled"})
 
 
+
+@app.route("/api/bookings/<int:booking_id>/cancel", methods=["PATCH"])
+def cancel_booking(booking_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT user_id, status FROM booking WHERE booking_id = %s", (booking_id,))
+        booking = cursor.fetchone()
+        
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+            
+        if booking["user_id"] != user_id:
+            return jsonify({"error": "Forbidden"}), 403
+            
+        if booking["status"] == "cancelled":
+            return jsonify({"error": "Already cancelled"}), 400
+            
+        cursor.execute("DELETE FROM booking WHERE booking_id=%s", (booking_id,))
+        db.commit()
+        return jsonify({"message": "Booking cancelled successfully"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(PORT))
