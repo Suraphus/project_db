@@ -155,7 +155,7 @@ export default function AdminPage() {
           />
           <input
             className="rounded border p-2"
-            placeholder="Type (Basketball, etc.)"
+            placeholder="Type (basketball, etc.)"
             value={form.type}
             onChange={(e) => onChange("type", e.target.value)}
           />

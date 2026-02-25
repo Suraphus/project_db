@@ -304,14 +304,14 @@ def add_field():
 
         name = data["name"]
         location = data["location"]
-        type = data["type"]
+        type = data["type"].lower()
         surface = data["surface"]
         status = data["status"]
         max_pp = data["max_pp"]
         img_url = data["image_url"]
 
         cursor.execute("INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUE (%s,%s,%s,%s,%s,%s,%s)"
-                    ,(name, location, type, surface, status, max_pp,))
+                    ,(name, location, type, surface, status, max_pp,img_url))
         
         db.commit()
         return jsonify({"message": "Facility created"})
