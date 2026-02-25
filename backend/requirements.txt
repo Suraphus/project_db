@@ -1,2 +1,7 @@
 flask
+flask-cors
+python-dotenv
+pymysql
 pymongo
+werkzeug
+cryptography

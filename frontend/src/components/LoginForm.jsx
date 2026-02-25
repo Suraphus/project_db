@@ -1,14 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-
+import { useCurrentUser } from "../Context/useCurrentUser";
+import {toast} from "react-toastify";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
   const navigate = useNavigate();
+  const { fetchUser } = useCurrentUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert("กรุณากรอก Email และ Password");
+      return;
+    }
+
     try {
       const res = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
@@ -23,7 +30,14 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
       if (res.ok) {
         setIsAuthenticated(true);
+        await fetchUser();
         navigate("/facilities");
+        toast.success("Login successful!",{autoClose:1700,
+                                           position:"top-right",
+                                           pauseOnHover:false,
+                                           closeOnClick:true
+                                          });
+        
       } else {
         alert(data.message);
       }
@@ -53,10 +67,7 @@ export default function LoginForm({ setIsLogin, setIsAuthenticated }) {
 
         <button
           onClick={handleLogin}
-
-          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer"
-
-
+          className="mt-[10px] h-[42px] bg-[#0a5c34] text-white rounded hover:cursor-pointer hover:scale-105 transition-all"
         >
           Login
         </button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { MapPin } from 'lucide-react'
+import { MapPin, X } from 'lucide-react'
+import BookingCalendar from '../components/BookingCalendar'
+
 
 const mockField = [
   {
@@ -34,25 +35,30 @@ const mockField = [
 
 export const Fields = () => {
 
-  const Navigate=useNavigate()
-  const [isPopup,setIsPopup] = useState(false)
+  const [selectedField, setSelectedField] = useState(null)
+
+  const handleBookingConfirm = (bookingData) => {
+    console.log("Booking confirmed:", bookingData)
+    setSelectedField(null)
+  }
 
   return (
     
 
-      <div className={`${!isPopup ? "bg-[#cfd2d4] py-20 mx-auto w-fit" : "py-20 mx-auto"}`}>
-        <div className='flex justify-center gap-10'>
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 py-20">
+        <div className='mx-auto grid max-w-6xl gap-8 px-6 md:grid-cols-2 xl:grid-cols-3'>
 
           {mockField.map((item, index) => (
-            <button onClick={()=>{
-              setIsPopup(!isPopup)
-              }} className='hover:cursor-pointer hover:scale-102 transition-all'>
-            <div 
+            <button
               key={index}
-              className="bg-white rounded-2xl shadow-md w-80 pb-1"
+              onClick={() => setSelectedField(item)}
+              className='hover:cursor-pointer transition-all hover:-translate-y-1'
+            >
+            <div 
+              className="overflow-hidden rounded-2xl border border-white/60 bg-white pb-1 shadow-md"
             >
               <div >
-                <img className="w-80 h-70 mb-2 rounded-t-2xl" src="https://cdn.prod.website-files.com/65724dca4c6e2916c2b00c25/65e9a454bcdf8bb397b81543_Howe_Final_4.jpg" alt="Basketball field" />
+                <img className="mb-2 h-70 w-full rounded-t-2xl object-cover" src="https://cdn.prod.website-files.com/65724dca4c6e2916c2b00c25/65e9a454bcdf8bb397b81543_Howe_Final_4.jpg" alt="Basketball field" />
               </div>
               <div className="mb-6">
                 <p className="text-xl font-bold mx-2 mb-1">{item.name}</p>
@@ -85,15 +91,21 @@ export const Fields = () => {
           ))}
 
         </div>
-            {isPopup && (
-  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white p-10 rounded-2xl shadow-xl">
+            {selectedField && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+    <div className="relative max-h-[95vh] w-full max-w-6xl overflow-y-auto">
       <button
-        onClick={() => setIsPopup(false)}
-        className="block mt-4 text-red-500"
-      > 
-        Close
+        onClick={() => setSelectedField(null)}
+        className="absolute right-3 top-3 z-10 rounded-full bg-slate-900/80 p-2 text-white transition hover:bg-slate-900"
+        aria-label="Close booking dialog"
+      >
+        <X size={18} />
       </button>
+
+      <BookingCalendar
+        fieldName={selectedField.name}
+        onConfirm={handleBookingConfirm}
+      />
     </div>
   </div>
 )}
@@ -103,4 +115,3 @@ export const Fields = () => {
   )
 
 }
-
