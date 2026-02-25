@@ -302,7 +302,7 @@ def add_field():
 
         name = data["name"]
         location = data["location"]
-        type = data["type"]
+        type = data["type"].lower()
         surface = data["surface"]
         status = data["status"]
         max_pp = data["max_pp"]
