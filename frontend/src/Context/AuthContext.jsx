@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import AuthContext from "./auth-context";
 
-const AuthContext = createContext();
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export function AuthProvider({ children }) {
@@ -34,5 +34,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-export const useCurrentUser = () => useContext(AuthContext);
