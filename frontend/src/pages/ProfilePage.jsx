@@ -74,7 +74,7 @@ export default function ProfilePage() {
                     <td className="py-3">{item.booking_date}</td>
                     <td className="py-3 pr-4 text-right">
                       <button
-                        onClick={() => navigate("/")}
+                        // onClick={() => navigate("/")}
                         className="bg-[#cc0000] text-white px-4 py-1 rounded-full text-xs hover:bg-red-700 transition"
                       >
                         cancel

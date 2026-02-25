@@ -56,7 +56,7 @@ export default function App() {
             element={isAuthenticated ? <AdminPage /> : <Navigate to="/login" />}
           />
           <Route
-            path="/fields"
+            path="/fields/:sportName"
             element={isAuthenticated ? <Fields /> : <Navigate to="/login" />}
           />
           <Route path="/profile" element={<ProfilePage />} />

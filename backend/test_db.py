@@ -319,6 +319,16 @@ def get_user_bookings():
     db.close()
     return jsonify(user_booking)
 
+@app.route("/api/get_field", methods=["GET"])
+def get_field():
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM courts")
+
+    all_field = cursor.fetchall()
+    cursor.close()
+    db.close()
+    return jsonify(all_field)
     
 # @app.route("/courts",methods=["GET"])
 # def get_courts():

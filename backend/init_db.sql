@@ -28,6 +28,7 @@ CREATE TABLE courts (
     location VARCHAR(255),
     status ENUM('available','maintenance','closed') DEFAULT 'available',
     type VARCHAR(50),
+    img_url VARCHAR(255),
     surface VARCHAR(50),
     max_pp INT NOT NULL,
     cur_pp INT NOT NULL DEFAULT 0

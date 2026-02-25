@@ -5,12 +5,15 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext";
 import { BookingProvider } from "./Context/BookingContext";
+import { FieldProvider } from "./Context/FieldContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <AuthProvider>
       <BookingProvider>
-        <App />
+        <FieldProvider>
+          <App />
+        </FieldProvider>
       </BookingProvider>
     </AuthProvider>
   </BrowserRouter>
