@@ -16,6 +16,7 @@ export default function AdminPage() {
     surface: "",
     status: "available",
     max_pp: "",
+    image_url: "",
   });
 
   const loadUsers = useCallback(async () => {
@@ -84,6 +85,7 @@ export default function AdminPage() {
         surface: "",
         status: "available",
         max_pp: "",
+        image_url: "",
       });
     } catch (err) {
       toast.error(err.message || "Create facility failed");
@@ -93,14 +95,19 @@ export default function AdminPage() {
   };
 
   const kickUser = async (targetUserId) => {
-    const ok = window.confirm("Kick this user? This will delete their account.");
+    const ok = window.confirm(
+      "Kick this user? This will delete their account."
+    );
     if (!ok) return;
 
     try {
-      const res = await fetch(`${apiUrl}/api/admin/users/${targetUserId}/kick`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${apiUrl}/api/admin/users/${targetUserId}/kick`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Kick failed");
 
@@ -130,7 +137,10 @@ export default function AdminPage() {
 
       <section className="rounded-xl bg-white p-6 shadow-md">
         <h2 className="mb-4 text-xl font-semibold">Insert New Facility</h2>
-        <form onSubmit={createFacility} className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <form
+          onSubmit={createFacility}
+          className="grid grid-cols-1 gap-3 md:grid-cols-3"
+        >
           <input
             className="rounded border p-2"
             placeholder="Facility name"
@@ -154,6 +164,12 @@ export default function AdminPage() {
             placeholder="Surface"
             value={form.surface}
             onChange={(e) => onChange("surface", e.target.value)}
+          />
+          <input
+            className="rounded border p-2"
+            placeholder="Image URL"
+            value={form.image_url}
+            onChange={(e) => onChange("image_url", e.target.value)}
           />
           <select
             className="rounded border p-2"
@@ -198,7 +214,9 @@ export default function AdminPage() {
             <tbody>
               {logs.map((row) => (
                 <tr key={row.booking_id}>
-                  <td className="border p-2">{new Date(row.create_at).toLocaleString()}</td>
+                  <td className="border p-2">
+                    {new Date(row.create_at).toLocaleString()}
+                  </td>
                   <td className="border p-2">
                     {row.firstname} {row.lastname} ({row.email})
                   </td>
@@ -209,7 +227,10 @@ export default function AdminPage() {
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td className="border p-2 text-center text-gray-500" colSpan="5">
+                  <td
+                    className="border p-2 text-center text-gray-500"
+                    colSpan="5"
+                  >
                     No logs found
                   </td>
                 </tr>
@@ -254,7 +275,10 @@ export default function AdminPage() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td className="border p-2 text-center text-gray-500" colSpan="5">
+                  <td
+                    className="border p-2 text-center text-gray-500"
+                    colSpan="5"
+                  >
                     No users found
                   </td>
                 </tr>

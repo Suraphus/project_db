@@ -175,47 +175,7 @@ def is_admin():
     cursor.close()
     db.close()
     return bool(user and user["role"] == "admin")
-
-
-@app.route("/api/admin/facilities", methods=["POST"])
-def create_facility():
-    if not is_admin():
-        return jsonify({"message": "Forbidden"}), 403
-
-    data = request.json or {}
-    name = data.get("name")
-    max_pp = data.get("max_pp")
-
-    if not name or max_pp is None:
-        return jsonify({"message": "name and max_pp are required"}), 400
-
-    db = get_db_sql()
-    cursor = db.cursor()
-    try:
-        cursor.execute(
-            """
-            INSERT INTO courts (name, location, status, type, surface, max_pp, cur_pp)
-            VALUES (%s, %s, %s, %s, %s, %s, 0)
-            """,
-            (
-                name,
-                data.get("location"),
-                data.get("status", "available"),
-                data.get("type"),
-                data.get("surface"),
-                int(max_pp),
-            ),
-        )
-        db.commit()
-        return jsonify({"message": "Facility created", "court_id": cursor.lastrowid})
-    except Exception as e:
-        db.rollback()
-        return jsonify({"message": str(e)}), 400
-    finally:
-        cursor.close()
-        db.close()
-
-
+    
 @app.route("/api/admin/users", methods=["GET"])
 def list_users():
     if not is_admin():
@@ -330,6 +290,35 @@ def get_field():
     db.close()
     return jsonify(all_field)
     
+@app.route("/api/admin/facilities", methods=["POST"])
+def add_field():
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        data = request.json
+
+        name = data["name"]
+        location = data["location"]
+        type = data["type"]
+        surface = data["surface"]
+        status = data["status"]
+        max_pp = data["max_pp"]
+        img_url = data["image_url"]
+
+        cursor.execute("INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUE (%s,%s,%s,%s,%s,%s,%s)"
+                    ,(name, location, type, surface, status, max_pp, img_url))
+        
+        db.commit()
+        return jsonify({"message": "Facility created"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
 # @app.route("/courts",methods=["GET"])
 # def get_courts():
 #     cursor = db_sql.cursor(dictionary=True)
