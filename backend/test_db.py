@@ -412,5 +412,36 @@ def get_user_bookings():
 
 
 
+@app.route("/api/bookings/<int:booking_id>/cancel", methods=["PATCH"])
+def cancel_booking(booking_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT user_id, status FROM booking WHERE booking_id = %s", (booking_id,))
+        booking = cursor.fetchone()
+        
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+            
+        if booking["user_id"] != user_id:
+            return jsonify({"error": "Forbidden"}), 403
+            
+        if booking["status"] == "cancelled":
+            return jsonify({"error": "Already cancelled"}), 400
+            
+        cursor.execute("DELETE FROM booking WHERE booking_id=%s", (booking_id,))
+        db.commit()
+        return jsonify({"message": "Booking cancelled successfully"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(PORT))
