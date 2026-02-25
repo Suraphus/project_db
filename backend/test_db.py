@@ -304,6 +304,21 @@ def get_logs():
     db.close()
     return jsonify(logs)
 
+@app.route("/api/bookings", methods=["GET"])
+def get_user_bookings():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"})
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM booking WHERE user_id = %s", (user_id,))
+    
+    user_booking = cursor.fetchall()
+    cursor.close()
+    db.close()
+    return jsonify(user_booking)
+
     
 # @app.route("/courts",methods=["GET"])
 # def get_courts():

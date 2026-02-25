@@ -1,21 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../Context/useCurrentUser";
+import { useCurrentBooking } from "../Context/useCurrentBooking";
 
 export default function ProfilePage() {
   // ข้อมูลจำลองตามภาพต้นแบบ
   const { user } = useCurrentUser();
+  const { bookings } = useCurrentBooking();
+  const navigate = useNavigate();
 
   // ข้อมูลประวัติการจองตามภาพต้นแบบ
-  const [bookings, setBookings] = useState([
-    {
-      booking_id: "173",
-      court_id: "2",
-      date: "2025-7-1",
-      session: "9:00-10:00",
-      status: "7/10",
-      booking_date: "2025-6-20",
-    },
-  ]);
 
   return (
     <div className="min-h-screen bg-[#f3f4f6] font-sans">
@@ -55,12 +49,12 @@ export default function ProfilePage() {
             <table className="w-full text-center text-sm text-black">
               <thead className="border-b border-gray-400/50">
                 <tr>
-                  <th className="py-2 font-semibold">booking_id</th>
-                  <th className="py-2 font-semibold">court_id</th>
-                  <th className="py-2 font-semibold">date</th>
-                  <th className="py-2 font-semibold">session</th>
-                  <th className="py-2 font-semibold">status</th>
-                  <th className="py-2 font-semibold">booking date</th>
+                  <th className="py-2 font-semibold">Booking ID</th>
+                  <th className="py-2 font-semibold">Court</th>
+                  <th className="py-2 font-semibold">Date</th>
+                  <th className="py-2 font-semibold">Session</th>
+                  <th className="py-2 font-semibold">Status</th>
+                  <th className="py-2 font-semibold">Created</th>
                   <th className="py-2"></th>
                 </tr>
               </thead>
@@ -79,7 +73,10 @@ export default function ProfilePage() {
                     </td>
                     <td className="py-3">{item.booking_date}</td>
                     <td className="py-3 pr-4 text-right">
-                      <button className="bg-[#cc0000] text-white px-4 py-1 rounded-full text-xs hover:bg-red-700 transition">
+                      <button
+                        onClick={() => navigate("/")}
+                        className="bg-[#cc0000] text-white px-4 py-1 rounded-full text-xs hover:bg-red-700 transition"
+                      >
                         cancel
                       </button>
                     </td>

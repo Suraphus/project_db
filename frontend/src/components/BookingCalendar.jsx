@@ -1,141 +1,208 @@
-import { useMemo, useState, useCallback } from "react";
-import { Users, Check } from "lucide-react";
+import { memo, useCallback, useMemo, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import { CalendarDays, Clock3, Check } from "lucide-react";
 
-const mockRoomsByField = {
-  "Basketball 1": [
-    { id: 1, time: "08:00 - 10:00", maxPlayers: 10, currentPlayers: 2 },
-    { id: 2, time: "10:00 - 12:00", maxPlayers: 10, currentPlayers: 9 },
-    { id: 3, time: "14:00 - 16:00", maxPlayers: 10, currentPlayers: 10 },
-    { id: 4, time: "18:00 - 20:00", maxPlayers: 8, currentPlayers: 5 },
-  ],
-  "Football 3": [
-    { id: 5, time: "09:00 - 11:00", maxPlayers: 12, currentPlayers: 12 },
-    { id: 6, time: "13:00 - 15:00", maxPlayers: 12, currentPlayers: 4 },
-    { id: 7, time: "17:00 - 19:00", maxPlayers: 12, currentPlayers: 11 },
-  ],
-  "Field C": [
-    { id: 8, time: "07:00 - 09:00", maxPlayers: 6, currentPlayers: 1 },
-    { id: 9, time: "15:00 - 17:00", maxPlayers: 6, currentPlayers: 6 },
-    { id: 10, time: "19:00 - 21:00", maxPlayers: 6, currentPlayers: 3 },
-  ],
+const formatDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
-function RoomCard({ room, selected, onSelect }) {
-  const isFull = room.currentPlayers >= room.maxPlayers;
-
-  const ratio = room.currentPlayers / room.maxPlayers;
-
-  let statusLabel = "Waiting";
-  let statusClass = "bg-yellow-100 text-yellow-700";
-
-  if (isFull) {
-    statusLabel = "Full";
-    statusClass = "bg-red-100 text-red-600";
-  } else if (ratio >= 0.8) {
-    statusLabel = "Recommend";
-    statusClass = "bg-orange-100 text-orange-600";
-  } else if (ratio >= 0.5) {
-    statusLabel = "Ready";
-    statusClass = "bg-emerald-100 text-emerald-700";
-  }
-
+const DatePickerPanel = memo(function DatePickerPanel({
+  selectedDate,
+  onDateChange,
+  minDate,
+}) {
   return (
-    <button
-      onClick={() => onSelect(room)}
-      disabled={isFull}
-      className={`w-full rounded-2xl border p-4 text-left transition ${
-        isFull
-          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-          : selected
-          ? "border-emerald-600 bg-emerald-50"
-          : "border-slate-300 bg-white hover:border-emerald-500"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-lg font-bold">{room.time}</p>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}
-        >
-          {statusLabel}
-        </span>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2 text-slate-700">
+        <CalendarDays size={18} />
+        <p className="text-sm font-semibold">Pick a date</p>
       </div>
-
-      <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-        <Users size={16} />
-        <span>
-          {room.currentPlayers}/{room.maxPlayers} players
-        </span>
-      </div>
-    </button>
+      <Calendar
+        value={selectedDate}
+        onChange={onDateChange}
+        minDate={minDate}
+        className="!w-full border-0"
+      />
+    </div>
   );
-}
+});
 
 export default function BookingCalendar({ fieldName, onConfirm }) {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const today = useMemo(() => new Date(), []);
 
-  const rooms = useMemo(() => {
-    if (!fieldName) return [];
-    return mockRoomsByField[fieldName] || [];
-  }, [fieldName]);
+  const rooms = useMemo(
+    () => [
+      {
+        id: 1,
+        name: "Lobby #1",
+        time: "10:00 - 11:00",
+        currentPlayers: 2,
+        maxPlayers: 4,
+      },
+      {
+        id: 2,
+        name: "Lobby #2",
+        time: "11:30 - 12:30",
+        currentPlayers: 4,
+        maxPlayers: 4,
+      },
+      {
+        id: 3,
+        name: "Lobby #3",
+        time: "14:00 - 15:30",
+        currentPlayers: 1,
+        maxPlayers: 6,
+      },
+      {
+        id: 4,
+        name: "Lobby #4",
+        time: "18:00 - 19:00",
+        currentPlayers: 5,
+        maxPlayers: 6,
+      },
+    ],
+    []
+  );
 
-  const handleSelect = useCallback((room) => {
-    setSelectedRoom(room);
+  const canConfirm = selectedRoom !== null;
+
+  const handleDateChange = useCallback((value) => {
+    const nextDate = Array.isArray(value) ? value[0] : value;
+    setSelectedDate(nextDate);
+    setSelectedRoom(null);
   }, []);
 
   const handleConfirm = useCallback(() => {
-    if (!selectedRoom || !onConfirm) return;
+    if (!canConfirm || !onConfirm) return;
 
     onConfirm({
       fieldName,
-      time: selectedRoom.time,
-      currentPlayers: selectedRoom.currentPlayers,
-      maxPlayers: selectedRoom.maxPlayers,
+      date: formatDateKey(selectedDate),
+      roomId: selectedRoom.id,
+      roomName: selectedRoom.name,
     });
-  }, [fieldName, onConfirm, selectedRoom]);
+  }, [canConfirm, fieldName, onConfirm, selectedDate, selectedRoom]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-emerald-50 p-6 shadow-lg">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold tracking-[0.2em] text-slate-500">
-            GAME LOBBY
+            BOOKING STUDIO
           </p>
-          <h2 className="mt-1 text-3xl font-extrabold text-slate-900">
+          <h2 className="mt-1 text-2xl font-black text-slate-900">
             {fieldName}
           </h2>
         </div>
         <div className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
-          Choose a room to join
+          Select day and room
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {rooms.length === 0 ? (
-          <p className="text-slate-500">No rooms available.</p>
-        ) : (
-          rooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              selected={selectedRoom?.id === room.id}
-              onSelect={handleSelect}
-            />
-          ))
-        )}
-      </div>
+      <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
+        <DatePickerPanel
+          selectedDate={selectedDate}
+          onDateChange={handleDateChange}
+          minDate={today}
+        />
 
-      <button
-        onClick={handleConfirm}
-        disabled={!selectedRoom}
-        className={`mt-8 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-base font-semibold transition ${
-          selectedRoom
-            ? "bg-emerald-600 text-white hover:bg-emerald-700"
-            : "cursor-not-allowed bg-slate-200 text-slate-500"
-        }`}
-      >
-        <Check size={16} />
-        Join Room
-      </button>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2 text-slate-700">
+            <Clock3 size={18} />
+            <p className="text-sm font-semibold">Available Rooms</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {rooms.map((room) => {
+              const isFull = room.currentPlayers >= room.maxPlayers;
+              const isReady = room.currentPlayers === room.maxPlayers;
+              const statusText = isFull
+                ? "FULL"
+                : room.currentPlayers >= Math.ceil(room.maxPlayers / 2)
+                ? "Almost Ready"
+                : "Waiting for players";
+
+              return (
+                <button
+                  key={room.id}
+                  onClick={() => !isFull && setSelectedRoom(room)}
+                  disabled={isFull}
+                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                    isFull
+                      ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                      : selectedRoom?.id === room.id
+                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-emerald-500"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold">{room.name}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                        isFull
+                          ? "bg-red-100 text-red-600"
+                          : room.currentPlayers >=
+                            Math.ceil(room.maxPlayers / 2)
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-blue-100 text-blue-600"
+                      }`}
+                    >
+                      {statusText}
+                    </span>
+                  </div>
+
+                  <p className="mt-2 text-xs font-medium opacity-80">
+                    Time: {room.time}
+                  </p>
+                  <p className="text-xs opacity-80">
+                    Players: {room.currentPlayers} / {room.maxPlayers}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-sm font-semibold text-emerald-900">
+              Your booking
+            </p>
+            {selectedRoom === null ? (
+              <p className="mt-1 text-sm text-emerald-700">
+                Choose a room to preview your booking.
+              </p>
+            ) : (
+              <div className="mt-2 space-y-1 text-sm text-emerald-900">
+                <p>Date: {selectedDate.toLocaleDateString()}</p>
+                <p>Lobby: {selectedRoom.name}</p>
+                <p>Time: {selectedRoom.time}</p>
+                <p>
+                  Players: {selectedRoom.currentPlayers} /{" "}
+                  {selectedRoom.maxPlayers}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleConfirm}
+            disabled={!canConfirm}
+            className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
+              canConfirm
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "cursor-not-allowed bg-slate-200 text-slate-500"
+            }`}
+          >
+            <Check size={16} />
+            Confirm Booking
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

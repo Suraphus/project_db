@@ -1,14 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
+import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./Context/AuthContext";
+import { BookingProvider } from "./Context/BookingContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <AuthProvider>
-      <App />
+      <BookingProvider>
+        <App />
+      </BookingProvider>
     </AuthProvider>
   </BrowserRouter>
 );
