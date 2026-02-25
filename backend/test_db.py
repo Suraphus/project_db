@@ -93,6 +93,8 @@ def login():
 
         cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
         user = cursor.fetchone()
+        if not user:
+            return jsonify({"message": "Email not Found Please Sign-up"}), 401 
 
         if user and check_password_hash(user["password"], password):
             cursor.execute("""
@@ -119,8 +121,8 @@ def login():
             session["student_id"] = profile.get("student_id")
             session["role"] = profile["role"]
             return jsonify({"message": "success"})
-
-        return jsonify({"message": "Wrong Email or Password"}), 401
+        
+        return jsonify({"message": "Wrong Email or Password"}), 401 
     finally:
         cursor.close()
         db.close()
@@ -309,7 +311,7 @@ def add_field():
         img_url = data["image_url"]
 
         cursor.execute("INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUE (%s,%s,%s,%s,%s,%s,%s)"
-                    ,(name, location, type, surface, status, max_pp, img_url))
+                    ,(name, location, type, surface, status, max_pp,))
         
         db.commit()
         return jsonify({"message": "Facility created"})
