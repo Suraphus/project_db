@@ -8,6 +8,10 @@ export default function ProfilePage() {
   const { bookings, fetchBookings } = useCurrentBooking();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (fetchBookings) fetchBookings();
+  }, [fetchBookings]);
+
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel this booking?"))
       return;
@@ -24,8 +28,7 @@ export default function ProfilePage() {
       } else {
         const errorData = await res.json();
         alert(
-          `Failed to cancel booking: ${
-            errorData.error || errorData.message || "Unknown error"
+          `Failed to cancel booking: ${errorData.error || errorData.message || "Unknown error"
           }`
         );
       }
@@ -128,9 +131,13 @@ export default function ProfilePage() {
                     className="border-b border-gray-200"
                   >
                     <td className="py-3">{item.booking_id}</td>
-                    <td className="py-3">{item.court_id}</td>
+                    <td className="py-3">{item.court_name || item.court_id}</td>
                     <td className="py-3">{item.date}</td>
-                    <td className="py-3">{item.time_id}</td>
+                    <td className="py-3">
+                      {item.start_time && item.end_time
+                        ? `${item.start_time} - ${item.end_time}`
+                        : item.time_id}
+                    </td>
                     <td className="py-3 text-red-600 font-medium">
                       {item.status}
                     </td>

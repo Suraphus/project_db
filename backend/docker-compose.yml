@@ -48,6 +48,7 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: examplepassword
       MYSQL_DATABASE: db_init
+      MONGO_URI: mongodb://root:examplepassword@mongodb:27017/project_db?authSource=admin
     command: python test_db.py
 
 volumes:

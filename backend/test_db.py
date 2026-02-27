@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, has_request_context
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 from db_mongo import get_mongo_db
@@ -6,6 +6,7 @@ from db_sql import get_mysql_db
 from flask_cors import CORS
 import os
 import time
+from datetime import datetime
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ CORS(app,
      methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"])
 
+
 db_mongo = get_mongo_db()
 
 
@@ -34,6 +36,63 @@ def get_db_sql():
 
 
 PORT = os.getenv("PORT")
+
+
+def parse_date_or_none(raw_date):
+    try:
+        return datetime.strptime(raw_date, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+AUTH_ACTIONS = {"login", "logout"}
+BOOKING_ACTIONS = {"book", "cancel"}
+
+
+def log_activity(action, user_id=None, status="success", detail=None):
+    if action in AUTH_ACTIONS:
+        collection = db_mongo["auth_logs"]
+    elif action in BOOKING_ACTIONS:
+        collection = db_mongo["booking_logs"]
+    else:
+        collection = db_mongo["activity_logs"]
+
+    try:
+        ip_address = None
+        if has_request_context():
+            ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
+            if ip_address and "," in ip_address:
+                ip_address = ip_address.split(",")[0].strip()
+
+        if detail is None:
+            detail = {}
+        elif not isinstance(detail, (dict, list)):
+            detail = {"message": str(detail)}
+
+        collection.insert_one(
+            {
+                "user_id": user_id,
+                "action": action,
+                "status": status,
+                "detail": detail,
+                "ip_address": ip_address,
+                "created_at": datetime.utcnow(),
+            }
+        )
+    except Exception:
+        pass
+
+
+def _serialize_mongo_logs(rows):
+    result = []
+    for row in rows:
+        item = dict(row)
+        item.pop("_id", None)
+        created_at = item.get("created_at")
+        if isinstance(created_at, datetime):
+            item["created_at"] = created_at.isoformat()
+        result.append(item)
+    return result
 
 @app.route("/")
 def home():
@@ -118,8 +177,20 @@ def login():
             session["lastname"] = profile.get("lastname")
             session["student_id"] = profile.get("student_id")
             session["role"] = profile["role"]
+            log_activity(
+                action="login",
+                user_id=profile["user_id"],
+                status="success",
+                detail={"email": email},
+            )
             return jsonify({"message": "success"})
 
+        log_activity(
+            action="login",
+            user_id=user["user_id"] if user else None,
+            status="failed",
+            detail={"email": email, "reason": "Wrong Email or Password"},
+        )
         return jsonify({"message": "Wrong Email or Password"}), 401
     finally:
         cursor.close()
@@ -159,7 +230,9 @@ def get_current_user():
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
+    user_id = session.get("user_id")
     session.clear()
+    log_activity(action="logout", user_id=user_id, status="success")
     return jsonify({"message": "logged out"})
 
 
@@ -237,47 +310,273 @@ def get_logs():
     if not is_admin():
         return jsonify({"message": "Forbidden"}), 403
 
-    db = get_db_sql()
-    cursor = db.cursor()
-    cursor.execute(
-        """
-        SELECT
-            booking.booking_id,
-            booking.status,
-            booking.date,
-            booking.create_at,
-            user.user_id,
-            user.email,
-            profile_student.firstname,
-            profile_student.lastname,
-            courts.name AS court_name
-        FROM booking
-        JOIN user ON user.user_id = booking.user_id
-        LEFT JOIN profile_student ON profile_student.user_id = user.user_id
-        JOIN courts ON courts.court_id = booking.court_id
-        ORDER BY booking.create_at DESC
-        LIMIT 100
-        """
+    limit_raw = request.args.get("limit")
+    try:
+        limit = min(max(int(limit_raw or 200), 1), 1000)
+    except ValueError:
+        limit = 200
+
+    rows = list(
+        db_mongo["booking_logs"]
+        .find({}, {"_id": 0})
+        .sort("created_at", -1)
+        .limit(limit)
     )
-    logs = cursor.fetchall()
-    cursor.close()
-    db.close()
-    return jsonify(logs)
+    return jsonify(_serialize_mongo_logs(rows))
+
+
+@app.route("/api/admin/activity-logs", methods=["GET"])
+def get_activity_logs():
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    scope = (request.args.get("scope") or "all").lower()
+    limit_raw = request.args.get("limit")
+    try:
+        limit = min(max(int(limit_raw or 200), 1), 1000)
+    except ValueError:
+        limit = 200
+
+    if scope == "auth":
+        rows = list(
+            db_mongo["auth_logs"].find({}, {"_id": 0}).sort("created_at", -1).limit(limit)
+        )
+        return jsonify(_serialize_mongo_logs(rows))
+
+    if scope == "booking":
+        rows = list(
+            db_mongo["booking_logs"].find({}, {"_id": 0}).sort("created_at", -1).limit(limit)
+        )
+        return jsonify(_serialize_mongo_logs(rows))
+
+    auth_rows = list(
+        db_mongo["auth_logs"].find({}, {"_id": 0}).sort("created_at", -1).limit(limit)
+    )
+    booking_rows = list(
+        db_mongo["booking_logs"].find({}, {"_id": 0}).sort("created_at", -1).limit(limit)
+    )
+    merged = sorted(
+        auth_rows + booking_rows,
+        key=lambda x: x.get("created_at", datetime.min),
+        reverse=True,
+    )[:limit]
+    return jsonify(_serialize_mongo_logs(merged))
 
 @app.route("/api/bookings", methods=["GET"])
 def get_user_bookings():
     user_id = session.get("user_id")
     if not user_id:
-        return jsonify({"error": "Unauthorized"})
+        return jsonify({"error": "Unauthorized"}), 401
     
     db = get_db_sql()
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM booking WHERE user_id = %s", (user_id,))
+    cursor.execute("""
+        SELECT 
+            booking.*, 
+            courts.name AS court_name,
+            lobby_time_slot.time_slot_id AS time_id,
+            TIME_FORMAT(time_slot.start_time, '%%H:%%i') AS start_time,
+            TIME_FORMAT(time_slot.end_time, '%%H:%%i') AS end_time
+        FROM booking 
+        JOIN courts ON booking.court_id = courts.court_id
+        JOIN lobby_time_slot ON booking.lobby_time_id = lobby_time_slot.lobby_time_id
+        JOIN time_slot ON lobby_time_slot.time_slot_id = time_slot.time_slot_id
+        WHERE booking.user_id = %s
+        ORDER BY booking.create_at DESC
+    """, (user_id,))
     
     user_booking = cursor.fetchall()
     cursor.close()
     db.close()
     return jsonify(user_booking)
+
+
+@app.route("/api/bookings", methods=["POST"])
+def create_booking():
+    user_id = session.get("user_id")
+    if not user_id:
+        log_activity(action="book", user_id=None, status="failed", detail="Unauthorized")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    court_id = data.get("court_id")
+    time_slot_id = data.get("time_slot_id")
+    date_raw = data.get("date")
+
+    if court_id is None or time_slot_id is None or not date_raw:
+        log_activity(
+            action="book",
+            user_id=user_id,
+            status="failed",
+            detail="court_id, time_slot_id and date are required",
+        )
+        return jsonify({"error": "court_id, time_slot_id and date are required"}), 400
+
+    try:
+        court_id = int(court_id)
+        time_slot_id = int(time_slot_id)
+    except (TypeError, ValueError):
+        log_activity(
+            action="book",
+            user_id=user_id,
+            status="failed",
+            detail={"court_id": court_id, "time_slot_id": time_slot_id, "reason": "invalid ids"},
+        )
+        return jsonify({"error": "court_id and time_slot_id must be numbers"}), 400
+
+    booking_date = parse_date_or_none(date_raw)
+    if booking_date is None:
+        log_activity(
+            action="book",
+            user_id=user_id,
+            status="failed",
+            detail={"date": date_raw, "reason": "invalid date format"},
+        )
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT booking.booking_id
+            FROM booking
+            JOIN lobby_time_slot ON booking.lobby_time_id = lobby_time_slot.lobby_time_id
+            WHERE booking.user_id = %s
+              AND booking.court_id = %s
+              AND lobby_time_slot.time_slot_id = %s
+              AND booking.date = %s
+            LIMIT 1
+            """,
+            (user_id, court_id, time_slot_id, booking_date)
+        )
+        conflict = cursor.fetchone()
+        if conflict:
+            log_activity(
+                action="book",
+                user_id=user_id,
+                status="failed",
+                detail={
+                    "booking_id": conflict["booking_id"],
+                    "court_id": court_id,
+                    "time_slot_id": time_slot_id,
+                    "date": booking_date.isoformat(),
+                    "reason": "already booked by this user",
+                },
+            )
+            return jsonify({"error": "You already booked this time slot"}), 409
+
+        cursor.execute(
+            "CALL make_booking(%s, %s, %s, %s)",
+            (user_id, court_id, time_slot_id, booking_date)
+        )
+        while cursor.nextset():
+            pass
+
+        cursor.execute(
+            """
+            SELECT booking.booking_id
+            FROM booking
+            JOIN lobby_time_slot ON booking.lobby_time_id = lobby_time_slot.lobby_time_id
+            WHERE booking.user_id = %s
+              AND booking.court_id = %s
+              AND lobby_time_slot.time_slot_id = %s
+              AND booking.date = %s
+            ORDER BY booking.booking_id DESC
+            LIMIT 1
+            """,
+            (user_id, court_id, time_slot_id, booking_date)
+        )
+        created_booking = cursor.fetchone()
+        db.commit()
+        log_activity(
+            action="book",
+            user_id=user_id,
+            status="success",
+            detail={
+                "booking_id": created_booking["booking_id"] if created_booking else None,
+                "court_id": court_id,
+                "time_slot_id": time_slot_id,
+                "date": booking_date.isoformat(),
+            },
+        )
+        return jsonify({"message": "Booking created"}), 201
+    except Exception as e:
+        db.rollback()
+        log_activity(
+            action="book",
+            user_id=user_id,
+            status="failed",
+            detail={
+                "court_id": court_id,
+                "time_slot_id": time_slot_id,
+                "date": booking_date.isoformat(),
+                "error": str(e),
+            },
+        )
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+
+
+@app.route("/api/courts/<int:court_id>/slots", methods=["GET"])
+def get_court_slots(court_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    date_raw = request.args.get("date")
+    booking_date = parse_date_or_none(date_raw)
+    if booking_date is None:
+        return jsonify({"error": "date query is required in YYYY-MM-DD format"}), 400
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT
+                time_slot.time_slot_id,
+                TIME_FORMAT(time_slot.start_time, '%%H:%%i') AS start_time,
+                TIME_FORMAT(time_slot.end_time, '%%H:%%i') AS end_time,
+                lobby_time_slot.lobby_time_id,
+                COALESCE(lobby_time_slot.cur_pp, 0) AS cur_pp,
+                COALESCE(lobby_time_slot.max_pp, courts.max_pp) AS max_pp,
+                CASE
+                    WHEN my_booking.booking_id IS NULL THEN 0
+                    ELSE 1
+                END AS is_my_booking
+            FROM time_slot
+            CROSS JOIN courts
+            LEFT JOIN lobby_time_slot
+                ON lobby_time_slot.court_id = courts.court_id
+                AND lobby_time_slot.time_slot_id = time_slot.time_slot_id
+                AND lobby_time_slot.date = %s
+            LEFT JOIN booking AS my_booking
+                ON my_booking.lobby_time_id = lobby_time_slot.lobby_time_id
+                AND my_booking.user_id = %s
+            WHERE courts.court_id = %s
+            ORDER BY time_slot.start_time
+            """,
+            (booking_date, user_id, court_id)
+        )
+        rows = cursor.fetchall()
+
+        slots = []
+        for row in rows:
+            row["is_full"] = row["cur_pp"] >= row["max_pp"]
+            row["is_my_booking"] = bool(row["is_my_booking"])
+            slots.append(row)
+
+        return jsonify({
+            "court_id": court_id,
+            "date": booking_date.isoformat(),
+            "slots": slots,
+        })
+    finally:
+        cursor.close()
+        db.close()
 
 @app.route("/api/get_field", methods=["GET"])
 def get_field():
@@ -415,6 +714,7 @@ def add_field():
 def cancel_booking(booking_id):
     user_id = session.get("user_id")
     if not user_id:
+        log_activity(action="cancel", user_id=None, status="failed", detail="Unauthorized")
         return jsonify({"error": "Unauthorized"}), 401
     
     db = get_db_sql()
@@ -424,19 +724,49 @@ def cancel_booking(booking_id):
         booking = cursor.fetchone()
         
         if not booking:
+            log_activity(
+                action="cancel",
+                user_id=user_id,
+                status="failed",
+                detail={"booking_id": booking_id, "reason": "Booking not found"},
+            )
             return jsonify({"error": "Booking not found"}), 404
             
         if booking["user_id"] != user_id:
+            log_activity(
+                action="cancel",
+                user_id=user_id,
+                status="failed",
+                detail={"booking_id": booking_id, "reason": "Forbidden"},
+            )
             return jsonify({"error": "Forbidden"}), 403
             
         if booking["status"] == "cancelled":
+            log_activity(
+                action="cancel",
+                user_id=user_id,
+                status="failed",
+                detail={"booking_id": booking_id, "reason": "Already cancelled"},
+            )
             return jsonify({"error": "Already cancelled"}), 400
             
         cursor.execute("DELETE FROM booking WHERE booking_id=%s", (booking_id,))
         db.commit()
+        log_activity(
+            action="cancel",
+            user_id=user_id,
+            status="success",
+            detail={"booking_id": booking_id},
+        )
         return jsonify({"message": "Booking cancelled successfully"})
     except Exception as e:
         db.rollback()
+        log_activity(
+            action="cancel",
+            user_id=user_id,
+            status="failed",
+            detail={"booking_id": booking_id, "error": str(e)},
+        )
         return jsonify({"error": str(e)}), 400
     finally:
         cursor.close()
