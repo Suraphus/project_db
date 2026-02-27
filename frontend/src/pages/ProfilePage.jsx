@@ -43,6 +43,20 @@ export default function ProfilePage() {
   );
   const fileInputRef = useRef(null);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -132,7 +146,7 @@ export default function ProfilePage() {
                   >
                     <td className="py-3">{item.booking_id}</td>
                     <td className="py-3">{item.court_name || item.court_id}</td>
-                    <td className="py-3">{item.date}</td>
+                    <td className="py-3">{formatDate(item.date)}</td>
                     <td className="py-3">
                       {item.start_time && item.end_time
                         ? `${item.start_time} - ${item.end_time}`
@@ -141,7 +155,7 @@ export default function ProfilePage() {
                     <td className="py-3 text-red-600 font-medium">
                       {item.status}
                     </td>
-                    <td className="py-3">{item.create_at}</td>
+                    <td className="py-3">{formatDate(item.create_at)}</td>
                     <td className="py-3 pr-4 text-right">
                       {item.status !== "cancelled" &&
                         item.status !== "Cancelled" && (
