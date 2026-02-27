@@ -56,6 +56,20 @@ export default function AdminPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  };
+
   const createFacility = async (e) => {
     e.preventDefault();
     if (!form.name || !form.max_pp) {
@@ -124,169 +138,170 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-[#0a5c34]">Admin Dashboard</h1>
-        <button
-          onClick={refreshAll}
-          className="rounded-lg bg-[#0a5c34] px-4 py-2 text-white hover:opacity-90"
-        >
-          Refresh
-        </button>
-      </div>
-
-      <section className="rounded-xl bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-semibold">Insert New Facility</h2>
-        <form
-          onSubmit={createFacility}
-          className="grid grid-cols-1 gap-3 md:grid-cols-3"
-        >
-          <input
-            className="rounded border p-2"
-            placeholder="Facility name"
-            value={form.name}
-            onChange={(e) => onChange("name", e.target.value)}
-          />
-          <input
-            className="rounded border p-2"
-            placeholder="Location"
-            value={form.location}
-            onChange={(e) => onChange("location", e.target.value)}
-          />
-          <input
-            className="rounded border p-2"
-            placeholder="Type (basketball, etc.)"
-            value={form.type}
-            onChange={(e) => onChange("type", e.target.value)}
-          />
-          <input
-            className="rounded border p-2"
-            placeholder="Surface"
-            value={form.surface}
-            onChange={(e) => onChange("surface", e.target.value)}
-          />
-          <input
-            className="rounded border p-2"
-            placeholder="Image URL"
-            value={form.image_url}
-            onChange={(e) => onChange("image_url", e.target.value)}
-          />
-          <select
-            className="rounded border p-2"
-            value={form.status}
-            onChange={(e) => onChange("status", e.target.value)}
-          >
-            <option value="available">available</option>
-            <option value="maintenance">maintenance</option>
-            <option value="closed">closed</option>
-          </select>
-          <input
-            type="number"
-            min="1"
-            className="rounded border p-2"
-            placeholder="Max people"
-            value={form.max_pp}
-            onChange={(e) => onChange("max_pp", e.target.value)}
-          />
+    <div className="min-h-screen bg-[#f4f6f9] p-10">
+      <div className="mx-auto max-w-7xl space-y-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-emerald-800">
+              Admin Dashboard
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage facilities, users and booking logs
+            </p>
+          </div>
           <button
-            type="submit"
-            disabled={submitting}
-            className="rounded bg-[#0a5c34] px-4 py-2 font-semibold text-white disabled:opacity-60"
+            onClick={refreshAll}
+            className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800"
           >
-            {submitting ? "Saving..." : "Add Facility"}
+            Refresh Data
           </button>
-        </form>
-      </section>
-
-      <section className="rounded-xl bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-semibold">Booking Logs</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2 text-left">Time</th>
-                <th className="border p-2 text-left">Action</th>
-                <th className="border p-2 text-left">User ID</th>
-                <th className="border p-2 text-left">Detail</th>
-                <th className="border p-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((row, index) => (
-                <tr key={`${row.created_at || "na"}-${row.user_id || "na"}-${index}`}>
-                  <td className="border p-2">
-                    {row.created_at ? new Date(row.created_at).toLocaleString() : "-"}
-                  </td>
-                  <td className="border p-2">{row.action || "-"}</td>
-                  <td className="border p-2">{row.user_id ?? "-"}</td>
-                  <td className="border p-2">
-                    {row.detail ? JSON.stringify(row.detail) : "-"}
-                  </td>
-                  <td className="border p-2">{row.status || "-"}</td>
-                </tr>
-              ))}
-              {logs.length === 0 && (
-                <tr>
-                  <td
-                    className="border p-2 text-center text-gray-500"
-                    colSpan="5"
-                  >
-                    No logs found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
-      </section>
 
-      <section className="rounded-xl bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-semibold">Kick User</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-2 text-left">User ID</th>
-                <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Email</th>
-                <th className="border p-2 text-left">Role</th>
-                <th className="border p-2 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.user_id}>
-                  <td className="border p-2">{u.user_id}</td>
-                  <td className="border p-2">
-                    {u.firstname || "-"} {u.lastname || ""}
-                  </td>
-                  <td className="border p-2">{u.email}</td>
-                  <td className="border p-2">{u.role}</td>
-                  <td className="border p-2">
-                    <button
-                      onClick={() => kickUser(u.user_id)}
-                      disabled={u.role === "admin"}
-                      className="rounded bg-red-600 px-3 py-1 text-white disabled:bg-gray-400"
-                    >
-                      Kick
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && (
+        <section className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur">
+          <h2 className="mb-6 text-2xl font-bold text-emerald-700">
+            Add New Facility
+          </h2>
+
+          <form
+            onSubmit={createFacility}
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
+            <input
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Facility name"
+              value={form.name}
+              onChange={(e) => onChange("name", e.target.value)}
+            />
+            <input
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Location"
+              value={form.location}
+              onChange={(e) => onChange("location", e.target.value)}
+            />
+            <input
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Type (basketball, etc.)"
+              value={form.type}
+              onChange={(e) => onChange("type", e.target.value)}
+            />
+            <input
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Surface"
+              value={form.surface}
+              onChange={(e) => onChange("surface", e.target.value)}
+            />
+            <input
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Image URL"
+              value={form.image_url}
+              onChange={(e) => onChange("image_url", e.target.value)}
+            />
+            <select
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              value={form.status}
+              onChange={(e) => onChange("status", e.target.value)}
+            >
+              <option value="available">Available</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="closed">Closed</option>
+            </select>
+
+            <input
+              type="number"
+              min="1"
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Max people"
+              value={form.max_pp}
+              onChange={(e) => onChange("max_pp", e.target.value)}
+            />
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-xl bg-emerald-700 px-6 py-3 font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800 disabled:opacity-50"
+            >
+              {submitting ? "Saving..." : "Create Facility"}
+            </button>
+          </form>
+        </section>
+
+        <section className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur">
+          <h2 className="mb-6 text-2xl font-bold text-emerald-700">
+            Booking Logs
+          </h2>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-emerald-50 text-emerald-800">
                 <tr>
-                  <td
-                    className="border p-2 text-center text-gray-500"
-                    colSpan="5"
-                  >
-                    No users found
-                  </td>
+                  <th className="p-3 text-left font-semibold">Time</th>
+                  <th className="p-3 text-left font-semibold">User</th>
+                  <th className="p-3 text-left font-semibold">Court</th>
+                  <th className="p-3 text-left font-semibold">Date</th>
+                  <th className="p-3 text-left font-semibold">Status</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {logs.map((row) => (
+                  <tr
+                    key={row.booking_id}
+                    className="border-t hover:bg-emerald-50"
+                  >
+                    <td className="p-3">
+                      {formatDate(row.create_at)}
+                    </td>
+                    <td className="p-3">
+                      {row.firstname} {row.lastname} ({row.email})
+                    </td>
+                    <td className="p-3">{row.court_name}</td>
+                    <td className="p-3">{row.date}</td>
+                    <td className="p-3">{row.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur">
+          <h2 className="mb-6 text-2xl font-bold text-emerald-700">
+            Manage Users
+          </h2>
+          <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-emerald-50 text-emerald-800">
+                <tr>
+                  <th className="p-3 text-left font-semibold">User ID</th>
+                  <th className="p-3 text-left font-semibold">Name</th>
+                  <th className="p-3 text-left font-semibold">Email</th>
+                  <th className="p-3 text-left font-semibold">Role</th>
+                  <th className="p-3 text-left font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.user_id} className="border-t hover:bg-emerald-50">
+                    <td className="p-3">{u.user_id}</td>
+                    <td className="p-3">
+                      {u.firstname || "-"} {u.lastname || ""}
+                    </td>
+                    <td className="p-3">{u.email}</td>
+                    <td className="p-3 capitalize">{u.role}</td>
+                    <td className="p-3">
+                      <button
+                        onClick={() => kickUser(u.user_id)}
+                        disabled={u.role === "admin"}
+                        className="rounded-lg bg-red-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:bg-gray-400"
+                      >
+                        Kick
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -618,6 +618,33 @@ def add_field():
     finally:
         cursor.close()
         db.close()
+    
+
+@app.route("/api/fields/<int:field_id>", methods=["DELETE"])
+def delete_field(field_id):
+    if not is_admin():
+        return jsonify({"message": "Forbidden"}), 403
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT court_id FROM courts WHERE court_id=%s", (field_id,))
+        field = cursor.fetchone()
+        if not field:
+            return jsonify({"message": "Field not found"}), 404
+
+        cursor.execute("DELETE FROM courts WHERE court_id=%s", (field_id,))
+        db.commit()
+        return jsonify({"message": "Field deleted successfully"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+
+
+
 # @app.route("/courts",methods=["GET"])
 # def get_courts():
 #     cursor = db_sql.cursor(dictionary=True)
