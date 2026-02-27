@@ -772,5 +772,74 @@ def cancel_booking(booking_id):
         cursor.close()
         db.close()
 
+@app.route("/api/quickjoin", methods=["GET"])
+def get_quickjoin_slots():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    db = get_db_sql()
+    # ใช้แค่ db.cursor() เปล่าๆ เพราะระบบคุณตั้งค่าให้คืนค่าเป็น Dict ไว้อยู่แล้ว
+    cursor = db.cursor() 
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                courts.court_id,
+                courts.name AS field_name,
+                courts.type AS sport_name,
+                time_slot.time_slot_id,
+                TIME_FORMAT(time_slot.start_time, '%%H:%%i') AS start_time,
+                TIME_FORMAT(time_slot.end_time, '%%H:%%i') AS end_time,
+                lobby_time_slot.lobby_time_id,
+                COALESCE(lobby_time_slot.cur_pp, 0) AS cur_pp,
+                COALESCE(lobby_time_slot.max_pp, courts.max_pp) AS max_pp
+            FROM lobby_time_slot
+            JOIN courts ON lobby_time_slot.court_id = courts.court_id
+            JOIN time_slot ON lobby_time_slot.time_slot_id = time_slot.time_slot_id
+            WHERE lobby_time_slot.date = CURDATE()
+              AND time_slot.start_time > CURTIME()
+              -- ใช้เครื่องหมายหาร 2 ปกติ ระบบจะจัดการทศนิยมให้เอง ป้องกัน Error จากฟังก์ชัน CEIL
+              AND COALESCE(lobby_time_slot.cur_pp, 0) >= (COALESCE(lobby_time_slot.max_pp, courts.max_pp) / 2)
+              AND COALESCE(lobby_time_slot.cur_pp, 0) < COALESCE(lobby_time_slot.max_pp, courts.max_pp)
+              AND NOT EXISTS (
+                  SELECT 1 FROM booking 
+                  WHERE booking.lobby_time_id = lobby_time_slot.lobby_time_id 
+                    AND booking.user_id = %s
+              )
+            ORDER BY (COALESCE(lobby_time_slot.cur_pp, 0) / COALESCE(lobby_time_slot.max_pp, courts.max_pp)) DESC, time_slot.start_time ASC
+            LIMIT 6;
+            """,
+            (user_id,)
+        )
+        
+        # รับค่ามาใช้งานได้ตรงๆ เลย
+        rows = cursor.fetchall()
+        
+        quickjoin_list = []
+        for idx, row in enumerate(rows):
+            quickjoin_list.append({
+                "id": idx + 1,
+                "sportName": row["sport_name"].capitalize() if row["sport_name"] else "Sport",
+                "fieldName": row["field_name"],
+                "courtId": row["court_id"],
+                "date": datetime.now().strftime("%Y-%m-%d"), 
+                "room": {
+                    "time_slot_id": row["time_slot_id"],
+                    "name": f"Slot #{row['time_slot_id']}",
+                    "time": f"{row['start_time']} - {row['end_time']}",
+                    "currentPlayers": int(row["cur_pp"]),
+                    "maxPlayers": int(row["max_pp"])
+                }
+            })
+
+        return jsonify(quickjoin_list)
+    except Exception as e:
+        print("QuickJoin Error:", str(e))
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        db.close()
+        
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(PORT))

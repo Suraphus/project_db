@@ -31,7 +31,7 @@ const DatePickerPanel = memo(function DatePickerPanel({
   );
 });
 
-export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
+export default function BookingCalendar({ courtId, fieldName, onConfirm, preselectedData }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [slots, setSlots] = useState([]);
@@ -48,6 +48,26 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
     }
     return `${window.location.protocol}//${raw.replace(/\/+$/, "")}`;
   }, [rawApiUrl]);
+
+  // ตั้งค่าวันที่อัตโนมัติจาก Quick Join
+  useEffect(() => {
+    if (preselectedData && preselectedData.date) {
+      const [year, month, day] = preselectedData.date.split("-");
+      setSelectedDate(new Date(year, month - 1, day));
+    }
+  }, [preselectedData]);
+
+  // เลือกรอบให้อัตโนมัติเมื่อ Slots โหลดเสร็จ
+  useEffect(() => {
+    if (preselectedData && preselectedData.room && slots.length > 0) {
+      const matchingRoom = slots.find(
+        (r) => r.time_slot_id === preselectedData.room.time_slot_id
+      );
+      if (matchingRoom) {
+        setSelectedRoom(matchingRoom);
+      }
+    }
+  }, [preselectedData, slots]);
 
   const canConfirm =
     selectedRoom !== null &&
@@ -152,7 +172,7 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
           </h2>
         </div>
         <div className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
-          Select day and room
+          {preselectedData ? "Quick Join Selected" : "Select day and room"}
         </div>
       </div>
 
@@ -185,11 +205,13 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
             {slots.map((room) => {
               const isMyBooking = room.is_my_booking;
               const isFull = room.is_full;
-              const statusText = isMyBooking
-                ? "booked"
-                : isFull
-                ? "full"
-                : "available";
+              const isAlmostReady = room.cur_pp >= Math.ceil(room.max_pp / 2);
+
+              let statusText = "Available";
+              if (isMyBooking) statusText = "Booked";
+              else if (isFull) statusText = "Full";
+              else if (isAlmostReady) statusText = "Almost Ready";
+              else statusText = "Waiting for players";
 
               return (
                 <button
@@ -200,7 +222,7 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
                     isFull || isMyBooking
                       ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                       : selectedRoom?.time_slot_id === room.time_slot_id
-                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-md transform scale-[1.02]"
                       : "border-slate-300 bg-white text-slate-700 hover:border-emerald-500"
                   }`}
                 >
@@ -212,6 +234,8 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm }) {
                           ? "bg-indigo-100 text-indigo-700"
                           : isFull
                           ? "bg-red-100 text-red-600"
+                          : isAlmostReady
+                          ? "bg-yellow-100 text-yellow-700"
                           : "bg-blue-100 text-blue-600"
                       }`}
                     >
