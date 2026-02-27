@@ -3,12 +3,17 @@ import { MapPin, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import BookingCalendar from "../components/BookingCalendar";
 import { getAllField } from "../Context/getAllField";
+import { useCurrentUser } from "../Context/useCurrentUser";
 
 export const Fields = () => {
+  const { user } = useCurrentUser();
   const { fields, loading } = getAllField();
   const [selectedField, setSelectedField] = useState(null);
   const { sportName } = useParams();
   const decodedSportName = decodeURIComponent(sportName || "");
+  const [fieldToDelete, setFieldToDelete] = useState(null);
+  const isAdmin = user?.role == "admin";
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   if (loading) {
     return (
@@ -18,6 +23,7 @@ export const Fields = () => {
     );
   }
   console.log(fields);
+  console.log("API URL:", apiUrl);
 
   if (!fields) return null;
 
@@ -31,6 +37,32 @@ export const Fields = () => {
     setSelectedField(null);
   };
 
+  const handleDeleteField = async () => {
+    if (!fieldToDelete) return;
+
+    try {
+      const res = await fetch(
+        `${apiUrl}/api/fields/${fieldToDelete.court_id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Delete failed");
+      }
+      alert("ลบสำเร็จ");
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("ลบไม่สำเร็จ");
+    } finally {
+      setFieldToDelete(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 py-20">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 md:grid-cols-2 xl:grid-cols-3">
@@ -40,12 +72,25 @@ export const Fields = () => {
           </div>
         )}
         {fieldsList.map((item, index) => (
-          <button
+          <div
             key={index}
             onClick={() => setSelectedField(item)}
             className="hover:cursor-pointer transition-all hover:-translate-y-1"
           >
-            <div className="overflow-hidden rounded-2xl border border-white/60 bg-white pb-1 shadow-md">
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white pb-1 shadow-md">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFieldToDelete(item);
+                    console.log(fieldToDelete);
+                  }}
+                  className="absolute right-3 top-3 z-10 rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white shadow-md transition hover:bg-red-700"
+                >
+                  ลบสนาม
+                </button>
+              )}
               <div>
                 <img
                   className="mb-2 h-70 w-full rounded-t-2xl object-cover"
@@ -81,7 +126,7 @@ export const Fields = () => {
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
       {selectedField && (
@@ -100,6 +145,34 @@ export const Fields = () => {
               fieldName={selectedField.name}
               onConfirm={handleBookingConfirm}
             />
+          </div>
+        </div>
+      )}
+      {fieldToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="mb-4 text-xl font-bold text-gray-800">
+              ยืนยันการลบสนาม
+            </h2>
+            <p className="mb-6 text-gray-600">
+              คุณต้องการลบสนาม "{fieldToDelete.name}" ใช่หรือไม่?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setFieldToDelete(null)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-600 transition hover:bg-gray-100"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                onClick={handleDeleteField}
+                className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white transition hover:bg-red-700"
+              >
+                ลบเลย
+              </button>
+            </div>
           </div>
         </div>
       )}
