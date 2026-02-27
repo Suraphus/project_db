@@ -60,7 +60,7 @@ function Topbar({ setIsAuthenticated }) {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-40 bg-white text-black rounded-lg shadow-lg py-2">
+              <div className="absolute right-0 mt-3 w-40 bg-white text-black rounded-lg shadow-lg py-2 z-50">
                 <button
                   onClick={() => {
                     navigate("/profile");

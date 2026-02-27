@@ -205,24 +205,24 @@ export default function AdminPage() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="border p-2 text-left">Time</th>
-                <th className="border p-2 text-left">User</th>
-                <th className="border p-2 text-left">Court</th>
-                <th className="border p-2 text-left">Date</th>
+                <th className="border p-2 text-left">Action</th>
+                <th className="border p-2 text-left">User ID</th>
+                <th className="border p-2 text-left">Detail</th>
                 <th className="border p-2 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
-              {logs.map((row) => (
-                <tr key={row.booking_id}>
+              {logs.map((row, index) => (
+                <tr key={`${row.created_at || "na"}-${row.user_id || "na"}-${index}`}>
                   <td className="border p-2">
-                    {new Date(row.create_at).toLocaleString()}
+                    {row.created_at ? new Date(row.created_at).toLocaleString() : "-"}
                   </td>
+                  <td className="border p-2">{row.action || "-"}</td>
+                  <td className="border p-2">{row.user_id ?? "-"}</td>
                   <td className="border p-2">
-                    {row.firstname} {row.lastname} ({row.email})
+                    {row.detail ? JSON.stringify(row.detail) : "-"}
                   </td>
-                  <td className="border p-2">{row.court_name}</td>
-                  <td className="border p-2">{row.date}</td>
-                  <td className="border p-2">{row.status}</td>
+                  <td className="border p-2">{row.status || "-"}</td>
                 </tr>
               ))}
               {logs.length === 0 && (

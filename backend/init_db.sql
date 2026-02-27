@@ -1,7 +1,3 @@
-drop database if exists db_init;
-create database db_init;
-use db_init;
-
 CREATE TABLE user (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     role ENUM('admin','student') NOT NULL DEFAULT 'student',
@@ -30,29 +26,44 @@ CREATE TABLE courts (
     type VARCHAR(50),
     img_url VARCHAR(255),
     surface VARCHAR(50),
-    max_pp INT NOT NULL,
-    cur_pp INT NOT NULL DEFAULT 0
+    max_pp INT NOT NULL  -- จำนวนผู้เล่นสูงสุดที่สนามนี้สามารถรองรับได้
 );
 
-CREATE TABLE TimeSlot (
-    time_id INT AUTO_INCREMENT PRIMARY KEY,
-    court_id INT NOT NULL,
+CREATE TABLE time_slot (
+    time_slot_id INT AUTO_INCREMENT PRIMARY KEY,
     start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
+    end_time TIME NOT NULL
+);
 
-    CONSTRAINT fk_timeslot_court
+CREATE TABLE lobby_time_slot (
+    lobby_time_id INT AUTO_INCREMENT PRIMARY KEY,
+    court_id INT NOT NULL,
+    time_slot_id INT NOT NULL,
+    date DATE NOT NULL,
+    cur_pp INT NOT NULL DEFAULT 0,  -- จำนวนผู้จองในช่วงเวลานี้ (สำหรับแต่ละสนามและช่วงเวลา)
+    max_pp INT NOT NULL,  -- จำนวนผู้เล่นสูงสุดที่สามารถจองได้ในช่วงเวลานี้ (สามารถกำหนดแยกแต่ละสนามได้)
+    
+    CONSTRAINT fk_lobby_court
         FOREIGN KEY (court_id)
         REFERENCES courts(court_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_lobby_time_slot
+        FOREIGN KEY (time_slot_id)
+  
+        REFERENCES time_slot(time_slot_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_lobby_time UNIQUE (court_id, date, time_slot_id)
 );
 
 CREATE TABLE booking (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     court_id INT NOT NULL,
-    date DATE NOT NULL,
-    time_id INT NOT NULL,
+    lobby_time_id INT NOT NULL,
     status ENUM('active','cancelled') DEFAULT 'active',
+    date DATE NOT NULL,
     create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_booking_user
@@ -65,35 +76,100 @@ CREATE TABLE booking (
         REFERENCES courts(court_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_booking_time
-        FOREIGN KEY (time_id)
-        REFERENCES TimeSlot(time_id)
+    CONSTRAINT fk_booking_lobby_time
+        FOREIGN KEY (lobby_time_id)
+        REFERENCES lobby_time_slot(lobby_time_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT unique_booking UNIQUE (court_id, date, time_id)
+    CONSTRAINT unique_booking UNIQUE (user_id, lobby_time_id)
 );
 
+
 DELIMITER $$
-CREATE TRIGGER trg_booking_insert
+
+-- Trigger สำหรับการตั้งค่า max_pp ใน lobby_time_slot อัตโนมัติ
+CREATE TRIGGER set_max_pp_in_lobby_time_slot
+BEFORE INSERT ON lobby_time_slot
+FOR EACH ROW
+BEGIN
+    DECLARE court_max_pp INT;
+    
+    -- ดึงค่า max_pp จากสนามที่ระบุใน court_id
+    SELECT max_pp INTO court_max_pp
+    FROM courts
+    WHERE court_id = NEW.court_id;
+    
+    -- กำหนดค่า max_pp ของ lobby_time_slot จาก court_max_pp
+    SET NEW.max_pp = court_max_pp;
+END $$
+
+-- Trigger สำหรับการอัพเดต cur_pp หลังจากการจองสนาม
+CREATE TRIGGER update_cur_pp_after_booking
 AFTER INSERT ON booking
 FOR EACH ROW
 BEGIN
-    UPDATE courts
+    UPDATE lobby_time_slot
     SET cur_pp = cur_pp + 1
-    WHERE court_id = NEW.court_id;
-END$$
-DELIMITER ;
+    WHERE lobby_time_id = NEW.lobby_time_id;
+END $$
 
-
-DELIMITER $$
-CREATE TRIGGER trg_booking_delete
-AFTER UPDATE ON booking
+-- Trigger สำหรับการลดจำนวน cur_pp เมื่อการจองถูกลบ
+CREATE TRIGGER update_cur_pp_after_delete
+AFTER DELETE ON booking
 FOR EACH ROW
 BEGIN
-
-    UPDATE courts
+    UPDATE lobby_time_slot
     SET cur_pp = cur_pp - 1
-    WHERE court_id = OLD.court_id;
+    WHERE lobby_time_id = OLD.lobby_time_id;
+END $$
 
-END$$
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE make_booking(
+    IN p_user_id INT,
+    IN p_court_id INT,
+    IN p_time_slot_id INT,
+    IN p_date DATE
+)
+BEGIN
+    DECLARE v_lobby_time_id INT;
+    DECLARE v_cur_pp INT;
+    DECLARE v_max_pp INT;
+
+    START TRANSACTION;
+
+    SELECT lobby_time_id, cur_pp, max_pp 
+    INTO v_lobby_time_id, v_cur_pp, v_max_pp
+    FROM lobby_time_slot 
+    WHERE court_id = p_court_id 
+      AND time_slot_id = p_time_slot_id 
+      AND date = p_date
+    FOR UPDATE;
+
+    IF v_lobby_time_id IS NULL THEN
+        INSERT INTO lobby_time_slot (court_id, time_slot_id, date)
+        VALUES (p_court_id, p_time_slot_id, p_date);
+        
+        SET v_lobby_time_id = LAST_INSERT_ID();
+        
+        SELECT cur_pp, max_pp INTO v_cur_pp, v_max_pp
+        FROM lobby_time_slot 
+        WHERE lobby_time_id = v_lobby_time_id;
+    END IF;
+
+    IF v_cur_pp >= v_max_pp THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Booking failed: The court is already full for this time slot.';
+    ELSE
+        -- แก้ไขตรงนี้: เพิ่ม date เข้าไปในการ INSERT
+        INSERT INTO booking (user_id, court_id, lobby_time_id, date)
+        VALUES (p_user_id, p_court_id, v_lobby_time_id, p_date);
+        
+        COMMIT;
+    END IF;
+
+END $$
+
 DELIMITER ;

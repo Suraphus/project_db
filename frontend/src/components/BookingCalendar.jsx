@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { CalendarDays, Clock3, Check } from "lucide-react";
@@ -31,46 +31,50 @@ const DatePickerPanel = memo(function DatePickerPanel({
   );
 });
 
-export default function BookingCalendar({ fieldName, onConfirm }) {
+export default function BookingCalendar({ courtId, fieldName, onConfirm, preselectedData }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const today = useMemo(() => new Date(), []);
+  const rawApiUrl = import.meta.env.VITE_API_URL;
+  const apiBase = useMemo(() => {
+    const raw = (rawApiUrl || "").trim();
+    if (!raw) return window.location.origin;
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      return raw.replace(/\/+$/, "");
+    }
+    return `${window.location.protocol}//${raw.replace(/\/+$/, "")}`;
+  }, [rawApiUrl]);
 
-  const rooms = useMemo(
-    () => [
-      {
-        id: 1,
-        name: "Lobby #1",
-        time: "10:00 - 11:00",
-        currentPlayers: 2,
-        maxPlayers: 4,
-      },
-      {
-        id: 2,
-        name: "Lobby #2",
-        time: "11:30 - 12:30",
-        currentPlayers: 4,
-        maxPlayers: 4,
-      },
-      {
-        id: 3,
-        name: "Lobby #3",
-        time: "14:00 - 15:30",
-        currentPlayers: 1,
-        maxPlayers: 6,
-      },
-      {
-        id: 4,
-        name: "Lobby #4",
-        time: "18:00 - 19:00",
-        currentPlayers: 5,
-        maxPlayers: 6,
-      },
-    ],
-    []
-  );
+  // ตั้งค่าวันที่อัตโนมัติจาก Quick Join
+  useEffect(() => {
+    if (preselectedData && preselectedData.date) {
+      const [year, month, day] = preselectedData.date.split("-");
+      setSelectedDate(new Date(year, month - 1, day));
+    }
+  }, [preselectedData]);
 
-  const canConfirm = selectedRoom !== null;
+  // เลือกรอบให้อัตโนมัติเมื่อ Slots โหลดเสร็จ
+  useEffect(() => {
+    if (preselectedData && preselectedData.room && slots.length > 0) {
+      const matchingRoom = slots.find(
+        (r) => r.time_slot_id === preselectedData.room.time_slot_id
+      );
+      if (matchingRoom) {
+        setSelectedRoom(matchingRoom);
+      }
+    }
+  }, [preselectedData, slots]);
+
+  const canConfirm =
+    selectedRoom !== null &&
+    !selectedRoom.is_my_booking &&
+    !selectedRoom.is_full &&
+    !loadingSlots &&
+    !submitting;
 
   const handleDateChange = useCallback((value) => {
     const nextDate = Array.isArray(value) ? value[0] : value;
@@ -78,16 +82,83 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
     setSelectedRoom(null);
   }, []);
 
-  const handleConfirm = useCallback(() => {
-    if (!canConfirm || !onConfirm) return;
+  const fetchSlots = useCallback(
+    async (dateObj) => {
+      if (!courtId) return;
+      setLoadingSlots(true);
+      setSlotsError("");
+      try {
+        const dateKey = formatDateKey(dateObj);
+        const url = new URL(`/api/courts/${courtId}/slots`, apiBase);
+        url.searchParams.set("date", dateKey);
 
-    onConfirm({
-      fieldName,
-      date: formatDateKey(selectedDate),
-      roomId: selectedRoom.id,
-      roomName: selectedRoom.name,
-    });
-  }, [canConfirm, fieldName, onConfirm, selectedDate, selectedRoom]);
+        const res = await fetch(url.toString(), { credentials: "include" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to load slots");
+        }
+        setSlots(data.slots || []);
+      } catch (error) {
+        setSlots([]);
+        setSlotsError(error.message || "Failed to load slots");
+      } finally {
+        setLoadingSlots(false);
+      }
+    },
+    [apiBase, courtId]
+  );
+
+  useEffect(() => {
+    setSelectedRoom(null);
+    fetchSlots(selectedDate);
+  }, [selectedDate, courtId, fetchSlots]);
+
+  const handleConfirm = useCallback(async () => {
+    if (!canConfirm) return;
+    setSubmitting(true);
+    try {
+      const dateKey = formatDateKey(selectedDate);
+      const url = new URL("/api/bookings", apiBase);
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          court_id: courtId,
+          time_slot_id: selectedRoom.time_slot_id,
+          date: dateKey,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Booking failed");
+      }
+
+      if (onConfirm) {
+        onConfirm({
+          fieldName,
+          date: dateKey,
+          courtId,
+          timeSlotId: selectedRoom.time_slot_id,
+        });
+      }
+      await fetchSlots(selectedDate);
+      setSelectedRoom(null);
+    } catch (error) {
+      alert(error.message || "Booking failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    apiBase,
+    canConfirm,
+    courtId,
+    fieldName,
+    fetchSlots,
+    onConfirm,
+    selectedDate,
+    selectedRoom,
+  ]);
 
   return (
     <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-emerald-50 p-6 shadow-lg">
@@ -101,7 +172,7 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
           </h2>
         </div>
         <div className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
-          Select day and room
+          {preselectedData ? "Quick Join Selected" : "Select day and room"}
         </div>
       </div>
 
@@ -118,37 +189,52 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
             <p className="text-sm font-semibold">Available Rooms</p>
           </div>
 
+          {slotsError && (
+            <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {slotsError}
+            </p>
+          )}
+
+          {loadingSlots && (
+            <p className="mb-3 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+              Loading slots...
+            </p>
+          )}
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {rooms.map((room) => {
-              const isFull = room.currentPlayers >= room.maxPlayers;
-              const isReady = room.currentPlayers === room.maxPlayers;
-              const statusText = isFull
-                ? "FULL"
-                : room.currentPlayers >= Math.ceil(room.maxPlayers / 2)
-                ? "Almost Ready"
-                : "Waiting for players";
+            {slots.map((room) => {
+              const isMyBooking = room.is_my_booking;
+              const isFull = room.is_full;
+              const isAlmostReady = room.cur_pp >= Math.ceil(room.max_pp / 2);
+
+              let statusText = "Available";
+              if (isMyBooking) statusText = "Booked";
+              else if (isFull) statusText = "Full";
+              else if (isAlmostReady) statusText = "Almost Ready";
+              else statusText = "Waiting for players";
 
               return (
                 <button
-                  key={room.id}
-                  onClick={() => !isFull && setSelectedRoom(room)}
-                  disabled={isFull}
+                  key={room.time_slot_id}
+                  onClick={() => !isFull && !isMyBooking && setSelectedRoom(room)}
+                  disabled={isFull || isMyBooking}
                   className={`rounded-xl border px-4 py-3 text-left transition ${
-                    isFull
+                    isFull || isMyBooking
                       ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                      : selectedRoom?.id === room.id
-                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : selectedRoom?.time_slot_id === room.time_slot_id
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-md transform scale-[1.02]"
                       : "border-slate-300 bg-white text-slate-700 hover:border-emerald-500"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">{room.name}</p>
+                    <p className="text-sm font-bold">Slot #{room.time_slot_id}</p>
                     <span
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                        isFull
+                        isMyBooking
+                          ? "bg-indigo-100 text-indigo-700"
+                          : isFull
                           ? "bg-red-100 text-red-600"
-                          : room.currentPlayers >=
-                            Math.ceil(room.maxPlayers / 2)
+                          : isAlmostReady
                           ? "bg-yellow-100 text-yellow-700"
                           : "bg-blue-100 text-blue-600"
                       }`}
@@ -158,15 +244,21 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
                   </div>
 
                   <p className="mt-2 text-xs font-medium opacity-80">
-                    Time: {room.time}
+                    Time: {room.start_time} - {room.end_time}
                   </p>
                   <p className="text-xs opacity-80">
-                    Players: {room.currentPlayers} / {room.maxPlayers}
+                    Players: {room.cur_pp} / {room.max_pp}
                   </p>
                 </button>
               );
             })}
           </div>
+
+          {!loadingSlots && slots.length === 0 && !slotsError && (
+            <p className="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+              No slots found for this date.
+            </p>
+          )}
 
           <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
             <p className="text-sm font-semibold text-emerald-900">
@@ -179,11 +271,12 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
             ) : (
               <div className="mt-2 space-y-1 text-sm text-emerald-900">
                 <p>Date: {selectedDate.toLocaleDateString()}</p>
-                <p>Lobby: {selectedRoom.name}</p>
-                <p>Time: {selectedRoom.time}</p>
+                <p>Slot: #{selectedRoom.time_slot_id}</p>
                 <p>
-                  Players: {selectedRoom.currentPlayers} /{" "}
-                  {selectedRoom.maxPlayers}
+                  Time: {selectedRoom.start_time} - {selectedRoom.end_time}
+                </p>
+                <p>
+                  Players: {selectedRoom.cur_pp} / {selectedRoom.max_pp}
                 </p>
               </div>
             )}
@@ -199,7 +292,7 @@ export default function BookingCalendar({ fieldName, onConfirm }) {
             }`}
           >
             <Check size={16} />
-            Confirm Booking
+            {submitting ? "Booking..." : "Confirm Booking"}
           </button>
         </div>
       </div>

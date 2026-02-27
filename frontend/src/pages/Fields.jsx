@@ -27,6 +27,7 @@ export const Fields = () => {
 
   const handleBookingConfirm = (bookingData) => {
     console.log("Booking confirmed:", bookingData);
+    alert("Booking created successfully");
     setSelectedField(null);
   };
 
@@ -95,6 +96,7 @@ export const Fields = () => {
             </button>
 
             <BookingCalendar
+              courtId={selectedField.court_id}
               fieldName={selectedField.name}
               onConfirm={handleBookingConfirm}
             />
