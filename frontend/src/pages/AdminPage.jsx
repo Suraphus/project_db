@@ -19,6 +19,13 @@ export default function AdminPage() {
     image_url: "",
   });
 
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [batchForm, setBatchForm] = useState({
+    start_hour: 8,
+    end_hour: 22,
+    duration_minutes: 60,
+  });
+
   const loadUsers = useCallback(async () => {
     const res = await fetch(`${apiUrl}/api/admin/users`, {
       credentials: "include",
@@ -37,13 +44,70 @@ export default function AdminPage() {
     setLogs(data);
   }, []);
 
+  const loadTimeSlots = useCallback(async () => {
+    const res = await fetch(`${apiUrl}/api/admin/time_slots`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to load time slots");
+    const data = await res.json();
+    setTimeSlots(data);
+  }, []);
+
   const refreshAll = useCallback(async () => {
     try {
-      await Promise.all([loadUsers(), loadLogs()]);
+      await Promise.all([loadUsers(), loadLogs(), loadTimeSlots()]);
     } catch (err) {
       toast.error(err.message || "Failed to load admin data");
     }
-  }, [loadUsers, loadLogs]);
+  }, [loadUsers, loadLogs, loadTimeSlots]);
+
+  const addMockData = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/mock_data`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to add mock data");
+      toast.success("Mock courts added!");
+      refreshAll();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const generateBatchSlots = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/time_slots/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(batchForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate slots");
+      toast.success(data.message);
+      loadTimeSlots();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const deleteSlot = async (slotId) => {
+    if (!window.confirm("Delete this time slot?")) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/time_slots/${slotId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete slot");
+      toast.success("Slot deleted");
+      loadTimeSlots();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -149,13 +213,92 @@ export default function AdminPage() {
               Manage facilities, users and booking logs
             </p>
           </div>
-          <button
-            onClick={refreshAll}
-            className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800"
-          >
-            Refresh Data
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={addMockData}
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-blue-700"
+            >
+              Add Mock Courts
+            </button>
+            <button
+              onClick={refreshAll}
+              className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
+
+        <section className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-emerald-700">
+              Batch Generate Time Slots
+            </h2>
+            <p className="text-xs text-gray-500">
+              Create multiple slots at once (e.g. 08:00 to 22:00 every 60 mins)
+            </p>
+          </div>
+
+          <form
+            onSubmit={generateBatchSlots}
+            className="grid grid-cols-1 gap-4 md:grid-cols-4"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Start Hour (24h)</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                value={batchForm.start_hour}
+                onChange={(e) => setBatchForm({...batchForm, start_hour: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">End Hour (24h)</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                value={batchForm.end_hour}
+                onChange={(e) => setBatchForm({...batchForm, end_hour: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Duration (minutes)</label>
+              <input
+                type="number"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                value={batchForm.duration_minutes}
+                onChange={(e) => setBatchForm({...batchForm, duration_minutes: e.target.value})}
+              />
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-emerald-700 py-3 font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800"
+              >
+                Generate Slots
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8">
+            <h3 className="mb-4 text-lg font-bold text-gray-700">Current Time Slots</h3>
+            <div className="flex flex-wrap gap-2">
+              {timeSlots.map((slot) => (
+                <div key={slot.time_slot_id} className="group relative flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 border border-emerald-100">
+                  {slot.start_time} - {slot.end_time}
+                  <button 
+                    onClick={() => deleteSlot(slot.time_slot_id)}
+                    className="ml-1 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {timeSlots.length === 0 && <p className="text-gray-400 italic">No time slots created yet.</p>}
+            </div>
+          </div>
+        </section>
 
         <section className="rounded-2xl bg-white/80 p-8 shadow-xl backdrop-blur">
           <h2 className="mb-6 text-2xl font-bold text-emerald-700">

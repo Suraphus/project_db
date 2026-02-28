@@ -589,6 +589,130 @@ def get_field():
     db.close()
     return jsonify(all_field)
     
+@app.route("/api/admin/time_slots", methods=["GET"])
+def get_all_time_slots():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    # Check if admin
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
+        user_role = cursor.fetchone()
+        if not user_role or user_role["role"] != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+
+        cursor.execute("SELECT time_slot_id, TIME_FORMAT(start_time, '%H:%i') as start_time, TIME_FORMAT(end_time, '%H:%i') as end_time FROM time_slot ORDER BY start_time")
+        slots = cursor.fetchall()
+        return jsonify(slots)
+    finally:
+        cursor.close()
+        db.close()
+
+@app.route("/api/admin/time_slots/batch", methods=["POST"])
+def batch_create_time_slots():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    # Check if admin
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
+        user_role = cursor.fetchone()
+        if not user_role or user_role["role"] != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+
+        data = request.json
+        start_h = int(data.get("start_hour", 8))
+        end_h = int(data.get("end_hour", 22))
+        duration = int(data.get("duration_minutes", 60))
+
+        from datetime import time as dt_time, timedelta, datetime as dt_datetime
+
+        current_time = dt_datetime.combine(dt_datetime.today(), dt_time(start_h, 0))
+        end_limit = dt_datetime.combine(dt_datetime.today(), dt_time(end_h, 0))
+
+        created_count = 0
+        while current_time + timedelta(minutes=duration) <= end_limit:
+            slot_start = current_time.strftime("%H:%M:%S")
+            current_time += timedelta(minutes=duration)
+            slot_end = current_time.strftime("%H:%M:%S")
+
+            cursor.execute(
+                "INSERT INTO time_slot (start_time, end_time) VALUES (%s, %s)",
+                (slot_start, slot_end)
+            )
+            created_count += 1
+        
+        db.commit()
+        return jsonify({"message": f"Created {created_count} time slots", "count": created_count})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@app.route("/api/admin/time_slots/<int:slot_id>", methods=["DELETE"])
+def delete_time_slot(slot_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
+        user_role = cursor.fetchone()
+        if not user_role or user_role["role"] != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+
+        cursor.execute("DELETE FROM time_slot WHERE time_slot_id = %s", (slot_id,))
+        db.commit()
+        return jsonify({"message": "Time slot deleted"})
+    finally:
+        cursor.close()
+        db.close()
+
+@app.route("/api/admin/mock_data", methods=["POST"])
+def create_mock_data():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
+        user_role = cursor.fetchone()
+        if not user_role or user_role["role"] != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+
+        # Mock Courts
+        mock_courts = [
+            ("Football Arena", "Zone A", "football", "Artificial Grass", "available", 14, "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800"),
+            ("Grand Tennis Court", "Zone B", "tennis", "Hard Court", "available", 4, "https://images.unsplash.com/photo-1595435064219-c7813d162391?auto=format&fit=crop&q=80&w=800")
+        ]
+
+        for court in mock_courts:
+            cursor.execute(
+                "INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                court
+            )
+        
+        db.commit()
+        return jsonify({"message": "Mock courts created successfully"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        db.close()
+
 @app.route("/api/admin/facilities", methods=["POST"])
 def add_field():
     if not is_admin():
