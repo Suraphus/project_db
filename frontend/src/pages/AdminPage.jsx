@@ -87,7 +87,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate slots");
-      toast.success(data.message);
+      
+      if (data.skipped > 0) {
+        toast.warning(data.message);
+      } else {
+        toast.success(data.message);
+      }
+      
       loadTimeSlots();
     } catch (err) {
       toast.error(err.message);
@@ -103,6 +109,21 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed to delete slot");
       toast.success("Slot deleted");
+      loadTimeSlots();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const deleteAllSlots = async () => {
+    if (!window.confirm("Are you sure you want to delete ALL time slots? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/time_slots/all`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete all slots");
+      toast.success("All time slots deleted");
       loadTimeSlots();
     } catch (err) {
       toast.error(err.message);
@@ -282,7 +303,17 @@ export default function AdminPage() {
           </form>
 
           <div className="mt-8">
-            <h3 className="mb-4 text-lg font-bold text-gray-700">Current Time Slots</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-700">Current Time Slots</h3>
+              {timeSlots.length > 0 && (
+                <button
+                  onClick={deleteAllSlots}
+                  className="rounded-lg bg-red-100 px-4 py-1.5 text-sm font-semibold text-red-600 transition hover:bg-red-200"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {timeSlots.map((slot) => (
                 <div key={slot.time_slot_id} className="group relative flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 border border-emerald-100">

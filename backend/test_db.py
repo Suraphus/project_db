@@ -637,19 +637,56 @@ def batch_create_time_slots():
         end_limit = dt_datetime.combine(dt_datetime.today(), dt_time(end_h, 0))
 
         created_count = 0
+        skipped_count = 0
+        
         while current_time + timedelta(minutes=duration) <= end_limit:
             slot_start = current_time.strftime("%H:%M:%S")
             current_time += timedelta(minutes=duration)
             slot_end = current_time.strftime("%H:%M:%S")
 
-            cursor.execute(
-                "INSERT INTO time_slot (start_time, end_time) VALUES (%s, %s)",
-                (slot_start, slot_end)
-            )
-            created_count += 1
+            cursor.execute("SELECT time_slot_id FROM time_slot WHERE start_time = %s AND end_time = %s", (slot_start, slot_end))
+            existing_slot = cursor.fetchone()
+            
+            if not existing_slot:
+                cursor.execute(
+                    "INSERT INTO time_slot (start_time, end_time) VALUES (%s, %s)",
+                    (slot_start, slot_end)
+                )
+                created_count += 1
+            else:
+                skipped_count += 1
         
         db.commit()
-        return jsonify({"message": f"Created {created_count} time slots", "count": created_count})
+        
+        msg = f"Created {created_count} time slots."
+        if skipped_count > 0:
+            msg += f" Skipped {skipped_count} slots (already exist)."
+            
+        return jsonify({"message": msg, "count": created_count, "skipped": skipped_count})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@app.route("/api/admin/time_slots/all", methods=["DELETE"])
+def delete_all_time_slots():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
+        user_role = cursor.fetchone()
+        if not user_role or user_role["role"] != "admin":
+            return jsonify({"error": "Admin access required"}), 403
+
+        cursor.execute("DELETE FROM time_slot")
+        db.commit()
+        return jsonify({"message": "All time slots deleted"})
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
