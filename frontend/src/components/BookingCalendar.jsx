@@ -227,7 +227,9 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm, presele
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold">Slot #{room.time_slot_id}</p>
+                    <p className="text-sm font-bold">
+                      {room.start_time} - {room.end_time}
+                    </p>
                     <span
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${
                         isMyBooking
@@ -243,10 +245,7 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm, presele
                     </span>
                   </div>
 
-                  <p className="mt-2 text-xs font-medium opacity-80">
-                    Time: {room.start_time} - {room.end_time}
-                  </p>
-                  <p className="text-xs opacity-80">
+                  <p className="mt-2 text-xs opacity-80">
                     Players: {room.cur_pp} / {room.max_pp}
                   </p>
                 </button>
@@ -271,7 +270,6 @@ export default function BookingCalendar({ courtId, fieldName, onConfirm, presele
             ) : (
               <div className="mt-2 space-y-1 text-sm text-emerald-900">
                 <p>Date: {selectedDate.toLocaleDateString()}</p>
-                <p>Slot: #{selectedRoom.time_slot_id}</p>
                 <p>
                   Time: {selectedRoom.start_time} - {selectedRoom.end_time}
                 </p>
