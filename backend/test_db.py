@@ -543,23 +543,22 @@ def get_court_slots(court_id):
                 lobby_time_slot.lobby_time_id,
                 COALESCE(lobby_time_slot.cur_pp, 0) AS cur_pp,
                 COALESCE(lobby_time_slot.max_pp, courts.max_pp) AS max_pp,
-                CASE
-                    WHEN my_booking.booking_id IS NULL THEN 0
-                    ELSE 1
-                END AS is_my_booking
+                (
+                    SELECT COUNT(*) 
+                    FROM booking 
+                    WHERE booking.lobby_time_id = lobby_time_slot.lobby_time_id 
+                      AND booking.user_id = %s
+                ) > 0 AS is_my_booking
             FROM time_slot
             CROSS JOIN courts
             LEFT JOIN lobby_time_slot
                 ON lobby_time_slot.court_id = courts.court_id
                 AND lobby_time_slot.time_slot_id = time_slot.time_slot_id
                 AND lobby_time_slot.date = %s
-            LEFT JOIN booking AS my_booking
-                ON my_booking.lobby_time_id = lobby_time_slot.lobby_time_id
-                AND my_booking.user_id = %s
             WHERE courts.court_id = %s
             ORDER BY time_slot.start_time
             """,
-            (booking_date, user_id, court_id)
+            (user_id, booking_date, court_id)
         )
         rows = cursor.fetchall()
 
@@ -981,12 +980,13 @@ def get_quickjoin_slots():
                 TIME_FORMAT(time_slot.end_time, '%%H:%%i') AS end_time,
                 lobby_time_slot.lobby_time_id,
                 COALESCE(lobby_time_slot.cur_pp, 0) AS cur_pp,
-                COALESCE(lobby_time_slot.max_pp, courts.max_pp) AS max_pp
+                COALESCE(lobby_time_slot.max_pp, courts.max_pp) AS max_pp,
+                lobby_time_slot.date
             FROM lobby_time_slot
             JOIN courts ON lobby_time_slot.court_id = courts.court_id
             JOIN time_slot ON lobby_time_slot.time_slot_id = time_slot.time_slot_id
-            WHERE lobby_time_slot.date = CURDATE()
-              AND time_slot.start_time > CURTIME()
+            WHERE lobby_time_slot.date >= CURDATE()
+              AND (lobby_time_slot.date > CURDATE() OR time_slot.start_time > CURTIME())
               -- ใช้เครื่องหมายหาร 2 ปกติ ระบบจะจัดการทศนิยมให้เอง ป้องกัน Error จากฟังก์ชัน CEIL
               AND COALESCE(lobby_time_slot.cur_pp, 0) >= (COALESCE(lobby_time_slot.max_pp, courts.max_pp) / 2)
               AND COALESCE(lobby_time_slot.cur_pp, 0) < COALESCE(lobby_time_slot.max_pp, courts.max_pp)
@@ -995,7 +995,7 @@ def get_quickjoin_slots():
                   WHERE booking.lobby_time_id = lobby_time_slot.lobby_time_id 
                     AND booking.user_id = %s
               )
-            ORDER BY (COALESCE(lobby_time_slot.cur_pp, 0) / COALESCE(lobby_time_slot.max_pp, courts.max_pp)) DESC, time_slot.start_time ASC
+            ORDER BY lobby_time_slot.date ASC, (COALESCE(lobby_time_slot.cur_pp, 0) / COALESCE(lobby_time_slot.max_pp, courts.max_pp)) DESC, time_slot.start_time ASC
             LIMIT 6;
             """,
             (user_id,)
@@ -1011,7 +1011,7 @@ def get_quickjoin_slots():
                 "sportName": row["sport_name"].capitalize() if row["sport_name"] else "Sport",
                 "fieldName": row["field_name"],
                 "courtId": row["court_id"],
-                "date": datetime.now().strftime("%Y-%m-%d"), 
+                "date": row["date"].strftime("%Y-%m-%d") if row["date"] else datetime.now().strftime("%Y-%m-%d"), 
                 "room": {
                     "time_slot_id": row["time_slot_id"],
                     "name": f"Slot #{row['time_slot_id']}",

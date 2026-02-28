@@ -72,7 +72,7 @@ export const Fields = () => {
           className="mb-8 flex items-center gap-2 rounded-xl bg-white/60 px-4 py-2 text-sm font-bold text-gray-700 shadow-sm backdrop-blur transition hover:-translate-x-1 hover:bg-white/90 hover:text-emerald-700"
         >
           <ArrowLeft size={20} />
-          ย้อนกลับ
+          Return
         </button>
 
         <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
