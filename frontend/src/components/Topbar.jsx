@@ -21,10 +21,14 @@ function Topbar({ setIsAuthenticated }) {
     }
 
     const key = user?.user_id ? `user_pfp_${user.user_id}` : "user_pfp";
-    setProfileImg(localStorage.getItem(key) || localStorage.getItem("user_pfp") || null);
+    setProfileImg(
+      localStorage.getItem(key) || localStorage.getItem("user_pfp") || null
+    );
 
     const syncProfileImg = () => {
-      setProfileImg(localStorage.getItem(key) || localStorage.getItem("user_pfp") || null);
+      setProfileImg(
+        localStorage.getItem(key) || localStorage.getItem("user_pfp") || null
+      );
     };
 
     window.addEventListener("user-pfp-updated", syncProfileImg);
@@ -92,7 +96,7 @@ function Topbar({ setIsAuthenticated }) {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-40 bg-white text-black rounded-lg shadow-lg py-2 z-50">
+              <div className="absolute right-10 mt-40 w-40 bg-white text-black rounded-lg shadow-lg py-2 z-50">
                 <button
                   onClick={() => {
                     navigate("/profile");
