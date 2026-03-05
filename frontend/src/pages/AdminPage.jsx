@@ -69,7 +69,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add mock data");
-      toast.success("Mock courts added!");
+      toast.success("Mock courts added!",{pauseOnHover:false,autoClose:1500,closeOnClick:true});
       refreshAll();
     } catch (err) {
       toast.error(err.message);
@@ -89,9 +89,9 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.error || "Failed to generate slots");
       
       if (data.skipped > 0) {
-        toast.warning(data.message);
+        toast.warning(data.message,{pauseonHover:false,autoClose:1500,closeOnClick:true});
       } else {
-        toast.success(data.message);
+        toast.success(data.message,{pauseonHover:false,autoClose:1500,closeOnClick:true});
       }
       
       loadTimeSlots();
@@ -406,7 +406,7 @@ export default function AdminPage() {
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="min-w-full text-sm">
               <thead className="bg-emerald-50 text-emerald-800">
-                <tr>
+                <tr className="w-fit">
                   <th className="p-3 text-left font-semibold">Time</th>
                   <th className="p-3 text-left font-semibold">User</th>
                   <th className="p-3 text-left font-semibold">Court</th>
@@ -420,14 +420,14 @@ export default function AdminPage() {
                     key={row.booking_id}
                     className="border-t hover:bg-emerald-50"
                   >
-                    <td className="p-3">
-                      {formatDate(row.create_at)}
+                    <td className="p-3 w-50">
+                      {formatDate(row.created_at)}
                     </td>
-                    <td className="p-3">
-                      {row.firstname} {row.lastname} ({row.email})
+                    <td className="p-3 w-50">
+                      {row.firstname} {row.lastname}
                     </td>
-                    <td className="p-3">{row.court_name}</td>
-                    <td className="p-3">{row.date}</td>
+                    <td className="p-3">{row.courtname}</td>
+                    <td className="p-3">{row.detail?.date || row.date || "-"}</td>
                     <td className="p-3">{row.status}</td>
                   </tr>
                 ))}

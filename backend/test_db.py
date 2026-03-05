@@ -49,7 +49,7 @@ AUTH_ACTIONS = {"login", "logout"}
 BOOKING_ACTIONS = {"book", "cancel"}
 
 
-def log_activity(action, user_id=None, status="success", detail=None):
+def log_activity(action, user_id=None,user_firstname=None,user_lastname=None,courtname=None,status="success", detail=None):
     if action in AUTH_ACTIONS:
         collection = db_mongo["auth_logs"]
     elif action in BOOKING_ACTIONS:
@@ -72,6 +72,9 @@ def log_activity(action, user_id=None, status="success", detail=None):
         collection.insert_one(
             {
                 "user_id": user_id,
+                "firstname":user_firstname,
+                "lastname":user_lastname,
+                "courtname":courtname,
                 "action": action,
                 "status": status,
                 "detail": detail,
@@ -180,6 +183,8 @@ def login():
             log_activity(
                 action="login",
                 user_id=profile["user_id"],
+                user_firstname=profile.get("firstname"),
+                user_lastname=profile.get("lastname"),
                 status="success",
                 detail={"email": email},
             )
@@ -489,9 +494,16 @@ def create_booking():
         )
         created_booking = cursor.fetchone()
         db.commit()
+        cursor.execute("SELECT firstname,lastname FROM profile_student WHERE user_id=%s",(user_id,))
+        profile=cursor.fetchone()
+        cursor.execute("SELECT name FROM courts WHERE court_id=%s",(court_id,))
+        booked_court=cursor.fetchone()
         log_activity(
             action="book",
             user_id=user_id,
+            user_firstname=profile["firstname"] if profile else None,
+            user_lastname=profile["lastname"] if profile else None,
+            courtname=booked_court["name"] if booked_court else None,
             status="success",
             detail={
                 "booking_id": created_booking["booking_id"] if created_booking else None,
@@ -576,6 +588,80 @@ def get_court_slots(court_id):
     finally:
         cursor.close()
         db.close()
+
+
+@app.route("/api/courts/<int:court_id>/reviews", methods=["GET"])
+def get_court_reviews(court_id):
+    limit_raw = request.args.get("limit")
+    try:
+        limit = min(max(int(limit_raw or 50), 1), 200)
+    except ValueError:
+        limit = 50
+
+    rows = list(
+        db_mongo["field_reviews"]
+        .find({"court_id": court_id}, {"_id": 0})
+        .sort("created_at", -1)
+        .limit(limit)
+    )
+    return jsonify(_serialize_mongo_logs(rows))
+
+
+@app.route("/api/courts/<int:court_id>/reviews", methods=["POST"])
+def create_court_review(court_id):
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    rating = data.get("rating")
+    comment = (data.get("comment") or "").strip()
+
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        return jsonify({"error": "rating must be a number between 1 and 5"}), 400
+
+    if rating < 1 or rating > 5:
+        return jsonify({"error": "rating must be between 1 and 5"}), 400
+
+    if not comment:
+        return jsonify({"error": "comment is required"}), 400
+
+    db = get_db_sql()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT court_id, name FROM courts WHERE court_id = %s", (court_id,))
+        court = cursor.fetchone()
+        if not court:
+            return jsonify({"error": "Court not found"}), 404
+
+        cursor.execute(
+            "SELECT firstname, lastname FROM profile_student WHERE user_id = %s",
+            (user_id,),
+        )
+        profile = cursor.fetchone() or {}
+    finally:
+        cursor.close()
+        db.close()
+
+    review_doc = {
+        "court_id": court_id,
+        "court_name": court["name"],
+        "user_id": user_id,
+        "firstname": profile.get("firstname") or session.get("firstname"),
+        "lastname": profile.get("lastname") or session.get("lastname"),
+        "rating": rating,
+        "comment": comment,
+        "created_at": datetime.utcnow(),
+    }
+
+    db_mongo["field_reviews"].insert_one(review_doc)
+    review_doc.pop("_id", None)
+    if isinstance(review_doc.get("created_at"), datetime):
+        review_doc["created_at"] = review_doc["created_at"].isoformat()
+    return jsonify({"message": "Review created", "review": review_doc}), 201
+
 
 @app.route("/api/get_field", methods=["GET"])
 def get_field():

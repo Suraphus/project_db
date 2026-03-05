@@ -12,6 +12,28 @@ function Topbar({ setIsAuthenticated }) {
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "admin";
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
+  const [profileImg, setProfileImg] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!user) {
+      setProfileImg(null);
+      return;
+    }
+
+    const key = user?.user_id ? `user_pfp_${user.user_id}` : "user_pfp";
+    setProfileImg(localStorage.getItem(key) || localStorage.getItem("user_pfp") || null);
+
+    const syncProfileImg = () => {
+      setProfileImg(localStorage.getItem(key) || localStorage.getItem("user_pfp") || null);
+    };
+
+    window.addEventListener("user-pfp-updated", syncProfileImg);
+    window.addEventListener("storage", syncProfileImg);
+    return () => {
+      window.removeEventListener("user-pfp-updated", syncProfileImg);
+      window.removeEventListener("storage", syncProfileImg);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await fetch(`${apiUrl}/api/logout`, {
@@ -47,16 +69,26 @@ function Topbar({ setIsAuthenticated }) {
           </button>
         )}
         {!isLoginPage && user && (
-          <div className="relative">
-            <span className="text-xl font-bold mb-2 mr-4">
+          <div className="flex items-center">
+            <span className="text-xl font-bold mr-4">
               Login as : {user.student_id}
             </span>
 
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="bg-green-400 text-[#0a5c34] p-2 rounded-full hover:scale-110 hover:bg-yellow-300 transition-all shadow-md cursor-pointer"
+              className="h-10 w-10 overflow-hidden rounded-full bg-green-400 text-[#0a5c34] hover:scale-110 hover:bg-yellow-300 transition-all shadow-md cursor-pointer"
             >
-              <User size={20} />
+              {profileImg ? (
+                <img
+                  src={profileImg}
+                  alt="User profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <User size={20} />
+                </div>
+              )}
             </button>
 
             {showProfileMenu && (

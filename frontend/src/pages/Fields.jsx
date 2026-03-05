@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MapPin, X, ArrowLeft } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import BookingCalendar from "../components/BookingCalendar";
 import { getAllField } from "../Context/getAllField";
 import { useCurrentUser } from "../Context/useCurrentUser";
-
+import {toast} from "react-toastify"
 export const Fields = () => {
   const { user } = useCurrentUser();
   const { fields, loading } = getAllField();
@@ -13,6 +13,13 @@ export const Fields = () => {
   const navigate = useNavigate();
   const decodedSportName = decodeURIComponent(sportName || "");
   const [fieldToDelete, setFieldToDelete] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+  });
   const isAdmin = user?.role == "admin";
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -34,7 +41,7 @@ export const Fields = () => {
 
   const handleBookingConfirm = (bookingData) => {
     console.log("Booking confirmed:", bookingData);
-    alert("Booking created successfully");
+    toast.success("Booking created successfully",{pauseOnHover:false,autoClose:1500});
     setSelectedField(null);
   };
 
@@ -61,6 +68,73 @@ export const Fields = () => {
       alert("ลบไม่สำเร็จ");
     } finally {
       setFieldToDelete(null);
+    }
+  };
+
+  const fetchReviews = async (courtId) => {
+    if (!courtId) {
+      setReviews([]);
+      return;
+    }
+
+    setLoadingReviews(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/courts/${courtId}/reviews`, {
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => []);
+      if (!res.ok) throw new Error(data.error || "Failed to load reviews");
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedField) {
+      setReviews([]);
+      return;
+    }
+    fetchReviews(selectedField.court_id);
+  }, [selectedField]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedField) return;
+
+    const comment = reviewForm.comment.trim();
+    if (!comment) {
+      alert("Please write a review comment.");
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch(
+        `${apiUrl}/api/courts/${selectedField.court_id}/reviews`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            rating: Number(reviewForm.rating),
+            comment,
+          }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to submit review");
+
+      setReviewForm({ rating: 5, comment: "" });
+      fetchReviews(selectedField.court_id);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -150,12 +224,97 @@ export const Fields = () => {
             >
               <X size={18} />
             </button>
+            
+            <div className="space-y-4">
+              <BookingCalendar
+                courtId={selectedField.court_id}
+                fieldName={selectedField.name}
+                onConfirm={handleBookingConfirm}
+              />
 
-            <BookingCalendar
-              courtId={selectedField.court_id}
-              fieldName={selectedField.name}
-              onConfirm={handleBookingConfirm}
-            />
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
+                <h3 className="text-xl font-bold text-slate-900">
+                  Reviews for {selectedField.name}
+                </h3>
+
+                <form
+                  onSubmit={handleReviewSubmit}
+                  className="mt-4 grid gap-3 md:grid-cols-[140px_1fr_auto]"
+                >
+                  <select
+                    value={reviewForm.rating}
+                    onChange={(e) =>
+                      setReviewForm((prev) => ({
+                        ...prev,
+                        rating: Number(e.target.value),
+                      }))
+                    }
+                    className="rounded-xl border border-slate-300 px-3 py-2"
+                  >
+                    <option value={5}>5 Stars</option>
+                    <option value={4}>4 Stars</option>
+                    <option value={3}>3 Stars</option>
+                    <option value={2}>2 Stars</option>
+                    <option value={1}>1 Star</option>
+                  </select>
+
+                  <input
+                    value={reviewForm.comment}
+                    onChange={(e) =>
+                      setReviewForm((prev) => ({
+                        ...prev,
+                        comment: e.target.value,
+                      }))
+                    }
+                    placeholder="Write your review for this field..."
+                    className="rounded-xl border border-slate-300 px-3 py-2"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {reviewSubmitting ? "Submitting..." : "Post Review"}
+                  </button>
+                </form>
+
+                <div className="mt-5 space-y-3">
+                  {loadingReviews && (
+                    <p className="text-sm text-slate-500">Loading reviews...</p>
+                  )}
+
+                  {!loadingReviews && reviews.length === 0 && (
+                    <p className="text-sm text-slate-500">
+                      No reviews yet. Be the first to review this field.
+                    </p>
+                  )}
+
+                  {!loadingReviews &&
+                    reviews.map((review, index) => (
+                      <div
+                        key={`${review.user_id || "user"}-${review.created_at || index}`}
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-slate-800">
+                            {review.firstname || "User"} {review.lastname || ""}
+                          </p>
+                          <p className="text-sm font-semibold text-amber-600">
+                            {"★".repeat(Number(review.rating || 0))}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-700">{review.comment}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {review.created_at
+                            ? new Date(review.created_at).toLocaleString()
+                            : ""}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

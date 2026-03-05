@@ -7,6 +7,7 @@ export default function ProfilePage() {
   const { user } = useCurrentUser();
   const { bookings, fetchBookings } = useCurrentBooking();
   const navigate = useNavigate();
+  const storageKey = user?.user_id ? `user_pfp_${user.user_id}` : "user_pfp";
 
   useEffect(() => {
     if (fetchBookings) fetchBookings();
@@ -38,10 +39,15 @@ export default function ProfilePage() {
     }
   };
 
-  const [profileImg, setProfileImg] = useState(
-    localStorage.getItem("user_pfp") || null
-  );
+  const [profileImg, setProfileImg] = useState(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const nextImg =
+      localStorage.getItem(storageKey) || localStorage.getItem("user_pfp") || null;
+    setProfileImg(nextImg);
+  }, [user, storageKey]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -64,8 +70,9 @@ export default function ProfilePage() {
       reader.onloadend = () => {
         const base64String = reader.result;
         setProfileImg(base64String);
-        // 2. บันทึกลง localStorage เมื่อเลือกรูปใหม่
-        localStorage.setItem("user_pfp", base64String);
+        localStorage.setItem(storageKey, base64String);
+        localStorage.removeItem("user_pfp");
+        window.dispatchEvent(new Event("user-pfp-updated"));
       };
       reader.readAsDataURL(file);
     }
