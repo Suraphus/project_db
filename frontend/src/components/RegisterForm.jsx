@@ -17,6 +17,10 @@ export default function RegisterForm({ setIsLogin }) {
       toast.error("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Invalid Email Format (example@gmail.com)");
+      return;
+    }
 
     try {
       const res = await fetch(`${apiUrl}/api/register`, {
@@ -81,8 +85,10 @@ export default function RegisterForm({ setIsLogin }) {
 
         <label className="text-[12px] text-[#555]">Email</label>
         <input
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
           className="h-[34px] rounded-[8px] bg-[#dde2e6] px-[10px] outline-none"
         />
 
