@@ -891,98 +891,6 @@ def delete_field(field_id):
 
 
 
-# @app.route("/courts",methods=["GET"])
-# def get_courts():
-#     cursor = db_sql.cursor(dictionary=True)
-#     cursor.execute("SELECT * from courts")
-#     courts = cursor.fetchall()
-#     return jsonify(courts)
-
-# @app.route("/timeslots")
-# def get_timeslots():
-#     cursor = db_sql.cursor(dictionary=True)
-#     court_id = request.args.get("court_id")
-
-#     sql = """
-#     SELECT *
-#     FROM TimeSlot
-#     WHERE court_id=%s
-#     """
-
-#     cursor.execute(sql, (court_id,))
-#     slots = cursor.fetchall()
-
-#     return jsonify(slots)
-
-# @app.route("/booking/slots")
-# def booked_slots():
-#     cursor = db_sql.cursor(dictionary=True)
-#     court_id = request.args.get("court_id")
-#     date = request.args.get("date")
-
-#     sql = "SELECT * FROM booking WHERE court_id = %s and date = %s"
-#     cursor.execute(sql,(court_id,date))
-#     slots = cursor.fetchall()
-
-#     return jsonify(slots)
-
-# @app.route("/bookings",methods = ["POST"])
-# def create_booking():
-#     cursor = db_sql.cursor(dictionary=True)
-
-#     token = request.headers.get("Authorization")
-#     user_id = token.replace("Bearer ", "")
-#     data = request.json
-
-#     sql = "INSERT INTO booking (user_id,court_id,date,time_id) VALUES (%s,%s,%s,%s)"
-
-#     cursor.execute(sql, (
-#         user_id,
-#         data["court_id"],
-#         data["date"],
-#         data["time_id"]
-#     ))
-#     db_sql.commit()
-#     return jsonify({"message": "booking success"})
-
-
-# @app.route("/bookings/my")
-# def my_bookings():
-#     cursor = db_sql.cursor(dictionary=True)
-
-#     token = request.headers.get("Authorization")
-#     user_id = token.replace("Bearer ", "")
-
-#     sql = """
-#     SELECT
-#         booking.booking_id,
-#         courts.name as court_name,
-#         booking.date,
-#         booking.time_id,
-#         booking.status
-#     FROM booking
-#     JOIN courts ON courts.court_id = booking.court_id
-#     WHERE booking.user_id=%s
-#     ORDER BY booking.create_at DESC
-#     """
-
-#     cursor.execute(sql, (user_id,))
-#     bookings = cursor.fetchall()
-
-#     return jsonify(bookings)
-
-
-# @app.route("/bookings/<int:id>/cancel", methods=["PATCH"])
-# def cancel_booking(id):
-#     cursor = db_sql.cursor(dictionary=True)
-
-#     sql = "UPDATE booking SET status='cancelled' WHERE booking_id=%s"
-#     cursor.execute(sql, (id,))
-#     db_sql.commit()
-#     return jsonify({"message": "cancelled"})
-
-
-
 @app.route("/api/bookings/<int:booking_id>/cancel", methods=["PATCH"])
 def cancel_booking(booking_id):
     user_id = session.get("user_id")
@@ -993,7 +901,7 @@ def cancel_booking(booking_id):
     db = get_db_sql()
     cursor = db.cursor()
     try:
-        cursor.execute("SELECT user_id, status FROM booking WHERE booking_id = %s", (booking_id,))
+        cursor.execute("SELECT user_id, status, court_id, date FROM booking WHERE booking_id = %s", (booking_id,))
         booking = cursor.fetchone()
         
         if not booking:
@@ -1023,13 +931,29 @@ def cancel_booking(booking_id):
             )
             return jsonify({"error": "Already cancelled"}), 400
             
+        court_id = booking.get("court_id")
+        
+        cursor.execute("SELECT firstname,lastname FROM profile_student WHERE user_id=%s",(user_id,))
+        profile=cursor.fetchone()
+        cursor.execute("SELECT name FROM courts WHERE court_id=%s",(court_id,))
+        booked_court=cursor.fetchone()
+
         cursor.execute("DELETE FROM booking WHERE booking_id=%s", (booking_id,))
         db.commit()
+        
+        booking_date = booking.get("date")
         log_activity(
             action="cancel",
             user_id=user_id,
+            user_firstname=profile["firstname"] if profile else None,
+            user_lastname=profile["lastname"] if profile else None,
+            courtname=booked_court["name"] if booked_court else None,
             status="success",
-            detail={"booking_id": booking_id},
+            detail={
+                "booking_id": booking_id, 
+                "court_id": court_id,
+                "date": booking_date.isoformat() if hasattr(booking_date, "isoformat") else booking_date
+            },
         )
         return jsonify({"message": "Booking cancelled successfully"})
     except Exception as e:

@@ -69,7 +69,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add mock data");
-      toast.success("Mock courts added!",{pauseOnHover:false,autoClose:1500,closeOnClick:true});
+      toast.success("Mock courts added!", { pauseOnHover: false, autoClose: 1500, closeOnClick: true });
       refreshAll();
     } catch (err) {
       toast.error(err.message);
@@ -87,13 +87,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate slots");
-      
+
       if (data.skipped > 0) {
-        toast.warning(data.message,{pauseonHover:false,autoClose:1500,closeOnClick:true});
+        toast.warning(data.message, { pauseonHover: false, autoClose: 1500, closeOnClick: true });
       } else {
-        toast.success(data.message,{pauseonHover:false,autoClose:1500,closeOnClick:true});
+        toast.success(data.message, { pauseonHover: false, autoClose: 1500, closeOnClick: true });
       }
-      
+
       loadTimeSlots();
     } catch (err) {
       toast.error(err.message);
@@ -270,7 +270,7 @@ export default function AdminPage() {
                 type="number"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 value={batchForm.start_hour}
-                onChange={(e) => setBatchForm({...batchForm, start_hour: e.target.value})}
+                onChange={(e) => setBatchForm({ ...batchForm, start_hour: e.target.value })}
               />
             </div>
             <div>
@@ -279,7 +279,7 @@ export default function AdminPage() {
                 type="number"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 value={batchForm.end_hour}
-                onChange={(e) => setBatchForm({...batchForm, end_hour: e.target.value})}
+                onChange={(e) => setBatchForm({ ...batchForm, end_hour: e.target.value })}
               />
             </div>
             <div>
@@ -288,7 +288,7 @@ export default function AdminPage() {
                 type="number"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 value={batchForm.duration_minutes}
-                onChange={(e) => setBatchForm({...batchForm, duration_minutes: e.target.value})}
+                onChange={(e) => setBatchForm({ ...batchForm, duration_minutes: e.target.value })}
               />
             </div>
 
@@ -318,7 +318,7 @@ export default function AdminPage() {
               {timeSlots.map((slot) => (
                 <div key={slot.time_slot_id} className="group relative flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 border border-emerald-100">
                   {slot.start_time} - {slot.end_time}
-                  <button 
+                  <button
                     onClick={() => deleteSlot(slot.time_slot_id)}
                     className="ml-1 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
@@ -411,6 +411,7 @@ export default function AdminPage() {
                   <th className="p-3 text-left font-semibold">User</th>
                   <th className="p-3 text-left font-semibold">Court</th>
                   <th className="p-3 text-left font-semibold">Date</th>
+                  <th className="p-3 text-left font-semibold">Action</th>
                   <th className="p-3 text-left font-semibold">Status</th>
                 </tr>
               </thead>
@@ -428,7 +429,26 @@ export default function AdminPage() {
                     </td>
                     <td className="p-3">{row.courtname}</td>
                     <td className="p-3">{row.detail?.date || row.date || "-"}</td>
-                    <td className="p-3">{row.status}</td>
+                    <td className="p-3 capitalize">
+                      <span
+                        className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${row.action === "book"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-red-100 text-red-700"
+                          }`}
+                      >
+                        {row.action}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${row.status === "success"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-yellow-100 text-yellow-700"
+                          }`}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
