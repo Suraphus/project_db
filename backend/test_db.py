@@ -800,40 +800,6 @@ def delete_time_slot(slot_id):
         cursor.close()
         db.close()
 
-@app.route("/api/admin/mock_data", methods=["POST"])
-def create_mock_data():
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    db = get_db_sql()
-    cursor = db.cursor()
-    try:
-        cursor.execute("SELECT role FROM user WHERE user_id = %s", (user_id,))
-        user_role = cursor.fetchone()
-        if not user_role or user_role["role"] != "admin":
-            return jsonify({"error": "Admin access required"}), 403
-
-        # Mock Courts
-        mock_courts = [
-            ("Football Arena", "Zone A", "football", "Artificial Grass", "available", 14, "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800"),
-            ("Grand Tennis Court", "Zone B", "tennis", "Hard Court", "available", 4, "https://images.unsplash.com/photo-1595435064219-c7813d162391?auto=format&fit=crop&q=80&w=800")
-        ]
-
-        for court in mock_courts:
-            cursor.execute(
-                "INSERT INTO courts (name, location, type, surface, status, max_pp, img_url) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                court
-            )
-        
-        db.commit()
-        return jsonify({"message": "Mock courts created successfully"})
-    except Exception as e:
-        db.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-        db.close()
 
 @app.route("/api/admin/facilities", methods=["POST"])
 def add_field():
