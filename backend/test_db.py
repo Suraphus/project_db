@@ -64,24 +64,28 @@ def log_activity(action, user_id=None,user_firstname=None,user_lastname=None,cou
             if ip_address and "," in ip_address:
                 ip_address = ip_address.split(",")[0].strip()
 
+        detail_dict = detail
         if detail is None:
-            detail = {}
+            detail_dict = {}
         elif not isinstance(detail, (dict, list)):
-            detail = {"message": str(detail)}
+            detail_dict = {"message": str(detail)}
 
-        collection.insert_one(
-            {
-                "user_id": user_id,
-                "firstname":user_firstname,
-                "lastname":user_lastname,
-                "courtname":courtname,
-                "action": action,
-                "status": status,
-                "detail": detail,
-                "ip_address": ip_address,
-                "created_at": datetime.utcnow(),
-            }
-        )
+        log_data = {
+            "user_id": user_id,
+            "firstname": user_firstname,
+            "lastname": user_lastname,
+            "courtname": courtname,
+            "action": action,
+            "status": status,
+            "detail": detail_dict,
+            "ip_address": ip_address,
+            "created_at": datetime.utcnow(),
+        }
+        
+        # Remove keys where the value is None
+        log_data = {k: v for k, v in log_data.items() if v is not None}
+
+        collection.insert_one(log_data)
     except Exception:
         pass
 
@@ -176,6 +180,7 @@ def login():
                 return jsonify({"message": "User profile not found"}), 404
 
             session["user_id"] = profile["user_id"]
+            session["email"] = email
             session["firstname"] = profile.get("firstname")
             session["lastname"] = profile.get("lastname")
             session["student_id"] = profile.get("student_id")
@@ -236,8 +241,18 @@ def get_current_user():
 @app.route("/api/logout", methods=["POST"])
 def logout():
     user_id = session.get("user_id")
+    email = session.get("email")
+    firstname = session.get("firstname")
+    lastname = session.get("lastname")
     session.clear()
-    log_activity(action="logout", user_id=user_id, status="success")
+    log_activity(
+        action="logout", 
+        user_id=user_id, 
+        user_firstname=firstname,
+        user_lastname=lastname,
+        status="success", 
+        detail={"email": email}
+    )
     return jsonify({"message": "logged out"})
 
 
