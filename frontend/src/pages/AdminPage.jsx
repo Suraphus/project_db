@@ -61,21 +61,6 @@ export default function AdminPage() {
     }
   }, [loadUsers, loadLogs, loadTimeSlots]);
 
-  const addMockData = async () => {
-    try {
-      const res = await fetch(`${apiUrl}/api/admin/mock_data`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add mock data");
-      toast.success("Mock courts added!",{pauseOnHover:false,autoClose:1500,closeOnClick:true});
-      refreshAll();
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
   const generateBatchSlots = async (e) => {
     e.preventDefault();
     try {
@@ -235,12 +220,6 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex gap-4">
-            <button
-              onClick={addMockData}
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-blue-700"
-            >
-              Add Mock Courts
-            </button>
             <button
               onClick={refreshAll}
               className="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:scale-105 hover:bg-emerald-800"
