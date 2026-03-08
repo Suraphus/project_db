@@ -18,7 +18,7 @@ project_db/
 │   ├── requirements.txt      # Python dependencies
 │   ├── Dockerfile
 │   ├── docker-compose.yml
-│   └── .env                  # Environment variables (ไม่ commit)
+│   └── .env                  # Environment variables (สร้างเองตามแต่ละเครื่อง)
 └── frontend/
     ├── src/
     │   └── pages/            # React pages (AdminPage, BookingPage, ...)
