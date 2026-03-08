@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { MapPin, X, ArrowLeft } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import BookingCalendar from "../components/BookingCalendar";
-import { getAllField } from "../Context/getAllField";
+import { useAllField } from "../Context/getAllField";
 import { useCurrentUser } from "../Context/useCurrentUser";
-import {toast} from "react-toastify"
+import { toast } from "react-toastify"
 export const Fields = () => {
   const { user } = useCurrentUser();
-  const { fields, loading } = getAllField();
+  const { fields, loading } = useAllField();
   const [selectedField, setSelectedField] = useState(null);
   const { sportName } = useParams();
   const navigate = useNavigate();
@@ -23,6 +23,36 @@ export const Fields = () => {
   const isAdmin = user?.role == "admin";
   const apiUrl = import.meta.env.VITE_API_URL;
 
+  const fetchReviews = useCallback(async (courtId) => {
+    if (!courtId) {
+      setReviews([]);
+      return;
+    }
+
+    setLoadingReviews(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/courts/${courtId}/reviews`, {
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => []);
+      if (!res.ok) throw new Error(data.error || "Failed to load reviews");
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    if (!selectedField) {
+      setReviews([]);
+      return;
+    }
+    fetchReviews(selectedField.court_id);
+  }, [selectedField, fetchReviews]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-xl">
@@ -30,8 +60,6 @@ export const Fields = () => {
       </div>
     );
   }
-  console.log(fields);
-  console.log("API URL:", apiUrl);
 
   if (!fields) return null;
 
@@ -39,9 +67,8 @@ export const Fields = () => {
     (item) => item.type?.toLowerCase() === decodedSportName.toLowerCase()
   );
 
-  const handleBookingConfirm = (bookingData) => {
-    console.log("Booking confirmed:", bookingData);
-    toast.success("Booking created successfully",{pauseOnHover:false,autoClose:1500});
+  const handleBookingConfirm = () => {
+    toast.success("Booking created successfully", { pauseOnHover: false, autoClose: 1500 });
     setSelectedField(null);
   };
 
@@ -70,36 +97,6 @@ export const Fields = () => {
       setFieldToDelete(null);
     }
   };
-
-  const fetchReviews = async (courtId) => {
-    if (!courtId) {
-      setReviews([]);
-      return;
-    }
-
-    setLoadingReviews(true);
-    try {
-      const res = await fetch(`${apiUrl}/api/courts/${courtId}/reviews`, {
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => []);
-      if (!res.ok) throw new Error(data.error || "Failed to load reviews");
-      setReviews(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-      setReviews([]);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!selectedField) {
-      setReviews([]);
-      return;
-    }
-    fetchReviews(selectedField.court_id);
-  }, [selectedField]);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -224,7 +221,7 @@ export const Fields = () => {
             >
               <X size={18} />
             </button>
-            
+
             <div className="space-y-4">
               <BookingCalendar
                 courtId={selectedField.court_id}

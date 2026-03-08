@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../Context/useCurrentUser";
 import { useCurrentBooking } from "../Context/useCurrentBooking";
 
 export default function ProfilePage() {
   const { user } = useCurrentUser();
   const { bookings, fetchBookings } = useCurrentBooking();
-  const navigate = useNavigate();
   const storageKey = user?.user_id ? `user_pfp_${user.user_id}` : "user_pfp";
 
   useEffect(() => {
@@ -39,15 +37,11 @@ export default function ProfilePage() {
     }
   };
 
-  const [profileImg, setProfileImg] = useState(null);
+  const [pfpVersion, setPfpVersion] = useState(0);
   const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    if (!user) return;
-    const nextImg =
-      localStorage.getItem(storageKey) || localStorage.getItem("user_pfp") || null;
-    setProfileImg(nextImg);
-  }, [user, storageKey]);
+  const profileImg =
+    pfpVersion >= 0 &&
+    (localStorage.getItem(storageKey) || localStorage.getItem("user_pfp") || null);
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -69,9 +63,9 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result;
-        setProfileImg(base64String);
         localStorage.setItem(storageKey, base64String);
         localStorage.removeItem("user_pfp");
+        setPfpVersion((prev) => prev + 1);
         window.dispatchEvent(new Event("user-pfp-updated"));
       };
       reader.readAsDataURL(file);

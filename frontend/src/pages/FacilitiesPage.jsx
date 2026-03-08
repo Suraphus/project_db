@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Flame } from "lucide-react";
-import FacilityCard from "../components/FacilityCard";
-import { getAllField } from "../Context/getAllField";
+import { useAllField } from "../Context/getAllField";
 import BookingCalendar from "../components/BookingCalendar";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function Facilities() {
   const navigate = useNavigate();
-  const { fields, loading } = getAllField();
+  const { fields, loading } = useAllField();
   
   const [quickJoinData, setQuickJoinData] = useState(null);
   const [quickJoins, setQuickJoins] = useState([]);
@@ -51,7 +50,7 @@ function Facilities() {
     }, {})
   );
 
-  const handleQuickJoinConfirm = (bookingData) => {
+  const handleQuickJoinConfirm = () => {
     setQuickJoinData(null);
     window.location.reload(); // รีเฟรชหน้าเพื่ออัปเดตจำนวนคน
   };

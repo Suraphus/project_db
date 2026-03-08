@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, has_request_context
+from flask import Flask, request, jsonify, session, has_request_context, send_from_directory
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 from db_mongo import get_mongo_db
@@ -1011,6 +1011,15 @@ def get_quickjoin_slots():
     finally:
         cursor.close()
         db.close()
-        
+
+
+@app.route("/<path:path>")
+def serve_frontend(path):
+    dist_dir = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+    full_path = os.path.join(dist_dir, path)
+    if os.path.exists(full_path):
+        return send_from_directory(dist_dir, path)
+    return send_from_directory(dist_dir, "index.html")
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(PORT))
