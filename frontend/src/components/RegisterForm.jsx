@@ -40,7 +40,7 @@ export default function RegisterForm({ setIsLogin }) {
 
       const data = await res.json();
 
-      if (res.ok) {
+      if (data.status === "success") {
         toast.success("Register Successfully!", {
           position: "bottom-right",
           autoClose: 3000,
@@ -52,7 +52,7 @@ export default function RegisterForm({ setIsLogin }) {
           navigate("/login");
         }, 1500);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Email already exists");
       }
     } catch (err) {
       console.error(err);
