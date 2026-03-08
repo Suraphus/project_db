@@ -82,7 +82,6 @@ def log_activity(action, user_id=None,user_firstname=None,user_lastname=None,cou
             "created_at": datetime.utcnow(),
         }
         
-        # Remove keys where the value is None
         log_data = {k: v for k, v in log_data.items() if v is not None}
 
         collection.insert_one(log_data)
@@ -118,7 +117,6 @@ def register():
     student_id = data["student_id"]
 
     try:
-        # insert user (hash password!)
         cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
         user = cursor.fetchone()
         if not user:
@@ -129,7 +127,6 @@ def register():
 
             user_id = cursor.lastrowid
 
-            # insert profile
             cursor.execute(
                 "INSERT INTO profile_student (user_id,student_id,firstname,lastname) VALUES (%s,%s,%s,%s)",
                 (user_id, student_id, firstname, lastname)
@@ -695,7 +692,6 @@ def get_all_time_slots():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
     
-    # Check if admin
     db = get_db_sql()
     cursor = db.cursor()
     try:
@@ -717,7 +713,6 @@ def batch_create_time_slots():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
     
-    # Check if admin
     db = get_db_sql()
     cursor = db.cursor()
     try:
@@ -957,8 +952,7 @@ def get_quickjoin_slots():
         return jsonify({"error": "Unauthorized"}), 401
 
     db = get_db_sql()
-    # ใช้แค่ db.cursor() เปล่าๆ เพราะระบบคุณตั้งค่าให้คืนค่าเป็น Dict ไว้อยู่แล้ว
-    cursor = db.cursor() 
+    cursor = db.cursor()
     try:
         cursor.execute(
             """
@@ -978,7 +972,6 @@ def get_quickjoin_slots():
             JOIN time_slot ON lobby_time_slot.time_slot_id = time_slot.time_slot_id
             WHERE lobby_time_slot.date >= CURDATE()
               AND (lobby_time_slot.date > CURDATE() OR time_slot.start_time > CURTIME())
-              -- ใช้เครื่องหมายหาร 2 ปกติ ระบบจะจัดการทศนิยมให้เอง ป้องกัน Error จากฟังก์ชัน CEIL
               AND COALESCE(lobby_time_slot.cur_pp, 0) >= (COALESCE(lobby_time_slot.max_pp, courts.max_pp) / 2)
               AND COALESCE(lobby_time_slot.cur_pp, 0) < COALESCE(lobby_time_slot.max_pp, courts.max_pp)
               AND NOT EXISTS (
@@ -992,7 +985,6 @@ def get_quickjoin_slots():
             (user_id,)
         )
         
-        # รับค่ามาใช้งานได้ตรงๆ เลย
         rows = cursor.fetchall()
         
         quickjoin_list = []

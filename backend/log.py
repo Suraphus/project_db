@@ -36,17 +36,14 @@ def register():
         db = get_db()
         data = request.json
 
-        # Validate required fields
         required_fields = ["studentId", "name", "surname", "email", "password"]
         for field in required_fields:
             if not data.get(field):
                 return jsonify({"status": "error", "message": f"please fill {field}"}), 400
 
-        # Check duplicate email
         if db.user.find_one({"email": data.get("email")}):
             return jsonify({"status": "error", "message": "email has been used"}), 409
 
-        # Check duplicate studentId
         if db.user.find_one({"studentId": data.get("studentId")}):
             return jsonify({"status": "error", "message": "studentId has been used"}), 409
 
