@@ -1,6 +1,6 @@
 # Ku facility (Sport Facility Lobby Joining System)
 
-ระบบเข้าร่วมล็อบบี้ในการเล่นกีฬา **Flask + MySQL + MongoDB** (Backend) และ **React + Vite** (Frontend) รองรับการรันผ่าน Docker
+ใช้ **Flask + MySQL + MongoDB** (Backend) และ **React + Vite** (Frontend) รันผ่าน Docker
 
 ---
 
