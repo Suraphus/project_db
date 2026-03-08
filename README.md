@@ -134,7 +134,7 @@ DOCKER_PASSWORD=your_password_here
 - ระบบ Login / Register (Student & Admin)
 - ดูและจองสนามกีฬา
 - เลือกวันและช่วงเวลา
-- Admin Dashboard จัดการสนามและข้อมูล
+- Admin Dashboard จัดการสนามและดู log
 - ตรวจสอบสนามเต็มแบบ real-time ผ่าน transaction
 
 ---
