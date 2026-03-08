@@ -26,7 +26,7 @@ CREATE TABLE courts (
     type VARCHAR(50),
     img_url VARCHAR(255),
     surface VARCHAR(50),
-    max_pp INT NOT NULL  -- จำนวนผู้เล่นสูงสุดที่สนามนี้สามารถรองรับได้
+    max_pp INT NOT NULL  
 );
 
 CREATE TABLE time_slot (
@@ -40,8 +40,8 @@ CREATE TABLE lobby_time_slot (
     court_id INT NOT NULL,
     time_slot_id INT NOT NULL,
     date DATE NOT NULL,
-    cur_pp INT NOT NULL DEFAULT 0,  -- จำนวนผู้จองในช่วงเวลานี้ (สำหรับแต่ละสนามและช่วงเวลา)
-    max_pp INT NOT NULL,  -- จำนวนผู้เล่นสูงสุดที่สามารถจองได้ในช่วงเวลานี้ (สามารถกำหนดแยกแต่ละสนามได้)
+    cur_pp INT NOT NULL DEFAULT 0,  
+    max_pp INT NOT NULL,  
     
     CONSTRAINT fk_lobby_court
         FOREIGN KEY (court_id)
@@ -87,23 +87,23 @@ CREATE TABLE booking (
 
 DELIMITER $$
 
--- Trigger สำหรับการตั้งค่า max_pp ใน lobby_time_slot อัตโนมัติ
+
 CREATE TRIGGER set_max_pp_in_lobby_time_slot
 BEFORE INSERT ON lobby_time_slot
 FOR EACH ROW
 BEGIN
     DECLARE court_max_pp INT;
     
-    -- ดึงค่า max_pp จากสนามที่ระบุใน court_id
+    
     SELECT max_pp INTO court_max_pp
     FROM courts
     WHERE court_id = NEW.court_id;
     
-    -- กำหนดค่า max_pp ของ lobby_time_slot จาก court_max_pp
+    
     SET NEW.max_pp = court_max_pp;
 END $$
 
--- Trigger สำหรับการอัพเดต cur_pp หลังจากการจองสนาม
+
 CREATE TRIGGER update_cur_pp_after_booking
 AFTER INSERT ON booking
 FOR EACH ROW
@@ -113,7 +113,7 @@ BEGIN
     WHERE lobby_time_id = NEW.lobby_time_id;
 END $$
 
--- Trigger สำหรับการลดจำนวน cur_pp เมื่อการจองถูกลบ
+
 CREATE TRIGGER update_cur_pp_after_delete
 AFTER DELETE ON booking
 FOR EACH ROW
@@ -163,7 +163,7 @@ BEGIN
         ROLLBACK;
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Booking failed: The court is already full for this time slot.';
     ELSE
-        -- แก้ไขตรงนี้: เพิ่ม date เข้าไปในการ INSERT
+        
         INSERT INTO booking (user_id, court_id, lobby_time_id, date)
         VALUES (p_user_id, p_court_id, v_lobby_time_id, p_date);
         
