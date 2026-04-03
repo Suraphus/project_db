@@ -28,5 +28,7 @@ jobs:
 
     - name: Run unit tests
       working-directory: ./backend
+      env:
+        PYTHONPATH: ..
       run: |
         python -m unittest test_api.py
