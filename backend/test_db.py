@@ -491,10 +491,58 @@ def create_booking():
             )
             return jsonify({"error": "You already booked this time slot"}), 409
 
+        # cursor.execute(
+        #     "CALL make_booking(%s, %s, %s, %s)",
+        #     (user_id, court_id, time_slot_id, booking_date)
+        # )
+        # --- เริ่มต้นส่วนที่แก้ใหม่แทน CALL make_booking ---
+
+        # 1. ตรวจสอบว่ามี Slot เวลาในตาราง lobby_time_slot หรือยัง
         cursor.execute(
-            "CALL make_booking(%s, %s, %s, %s)",
-            (user_id, court_id, time_slot_id, booking_date)
+            """
+            SELECT lobby_time_id, cur_pp, max_pp 
+            FROM lobby_time_slot 
+            WHERE court_id = %s AND time_slot_id = %s AND date = %s
+            FOR UPDATE
+            """, (court_id, time_slot_id, booking_date)
         )
+        slot = cursor.fetchone()
+
+        if not slot:
+            # ถ้ายังไม่มี Slot ให้สร้างใหม่โดยดึง max_pp มาจากตาราง courts
+            cursor.execute(
+                """
+                INSERT INTO lobby_time_slot (court_id, time_slot_id, date, cur_pp, max_pp)
+                SELECT %s, %s, %s, 0, max_pp FROM courts WHERE court_id = %s
+                """, (court_id, time_slot_id, booking_date, court_id)
+            )
+            lobby_time_id = cursor.lastrowid
+            cur_pp = 0
+            # ดึง max_pp มาใช้เช็ค
+            cursor.execute("SELECT max_pp FROM courts WHERE court_id = %s", (court_id,))
+            max_pp = cursor.fetchone()['max_pp']
+        else:
+            lobby_time_id = slot['lobby_time_id']
+            cur_pp = slot['cur_pp']
+            max_pp = slot['max_pp']
+
+        # 2. ตรวจสอบว่าสนามเต็มหรือยัง
+        if cur_pp >= max_pp:
+            return jsonify({"error": "สนามเต็มแล้วสำหรับช่วงเวลานี้"}), 400
+
+        # 3. บันทึกการจอง
+        cursor.execute(
+            "INSERT INTO booking (user_id, court_id, lobby_time_id, date) VALUES (%s, %s, %s, %s)",
+            (user_id, court_id, lobby_time_id, booking_date)
+        )
+
+        # 4. อัปเดตจำนวนคนในสนาม (แทนหน้าที่ของ Trigger)
+        cursor.execute(
+            "UPDATE lobby_time_slot SET cur_pp = cur_pp + 1 WHERE lobby_time_id = %s",
+            (lobby_time_id,)
+        )
+
+        # --- จบส่วนที่แก้ใหม่ ---
         while cursor.nextset():
             pass
 
