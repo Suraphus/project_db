@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, session, has_request_context, send_from_directory
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
-from db_mongo import get_mongo_db
-from db_sql import get_mysql_db
+# from db_mongo import get_mongo_db
+from backend.db_mongo import get_mongo_db
+# from db_sql import get_mysql_db
+from backend.db_sql import get_mysql_db
 from flask_cors import CORS
 import os
 import time
