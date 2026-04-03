@@ -10,6 +10,5 @@ def get_mysql_db():
         database=os.getenv("DB_NAME"),
         port=int(os.getenv("DB_PORT", "4000")),
         cursorclass=pymysql.cursors.DictCursor,
-        ssl_verify_cert=False, 
-        ssl_verify_identity=False
+        ssl={'ca': '/etc/ssl/certs/ca-certificates.crt'} 
     )
