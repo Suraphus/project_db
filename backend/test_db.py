@@ -15,12 +15,18 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 app.config.update(
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True
 )
 CORS(app,
      supports_credentials=True,
-     resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:5174"]}},
+     resources={r"/api/*": {
+         "origins": [
+             "http://localhost:5173",
+             "http://localhost:5174",
+             "https://project-db1.vercel.app"
+         ]
+     }},
      methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"])
 
