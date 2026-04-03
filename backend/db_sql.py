@@ -4,10 +4,11 @@ import pymysql
 
 def get_mysql_db():
     return pymysql.connect(
-        host=os.getenv("MYSQL_HOST", "mysql"),
-        user=os.getenv("MYSQL_USER", "root"),
-        password=os.getenv("MYSQL_PASSWORD", "examplepassword"),
-        database=os.getenv("MYSQL_DATABASE", "db_init"),
-        port=int(os.getenv("MYSQL_PORT", "3306")),
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT", "4000")),
         cursorclass=pymysql.cursors.DictCursor,
+        ssl={"ssl": {}}
     )
