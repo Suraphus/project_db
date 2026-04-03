@@ -5,3 +5,4 @@ pymysql
 pymongo
 werkzeug
 cryptography
+gunicorn
